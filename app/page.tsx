@@ -38,7 +38,7 @@ export default function AquariHomepage() {
           <div className="space-y-8">
             <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-md">
               <img
-                src="/aquari-full.jpg"
+                src="/aquari-full.png"
                 alt="Aquari character visual"
                 className="w-full rounded-xl"
               />
