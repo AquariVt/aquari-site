@@ -111,7 +111,7 @@ export default function AquariHomepage() {
                   rel="noopener noreferrer"
                   className="block rounded-xl bg-gray-700 p-4"
                 >
-                  制作者 DIAさん X
+                  制作者 DIAさん
                 </a>
               </div>
             </div>
@@ -143,19 +143,26 @@ export default function AquariHomepage() {
         </section>
 
         <section className="mb-12 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
-          <h2 className="mb-4 text-2xl font-bold">Xの最新投稿</h2>
-          <div className="overflow-hidden rounded-xl bg-white">
-            <a
-              className="twitter-timeline"
-              data-theme="dark"
-              data-height="700"
-              href="https://x.com/Aquari_Vt"
-            >
-              Posts by @Aquari_Vt
-            </a>
-          </div>
-        </section>
-      </main>
-    </div>
-  );
-}
+  <h2 className="mb-4 text-2xl font-bold">Xの最新投稿</h2>
+
+  <div className="overflow-hidden rounded-xl bg-white p-2">
+    <a
+      className="twitter-timeline"
+      data-theme="dark"
+      data-height="700"
+      data-chrome="noheader nofooter"
+      href="https://twitter.com/Aquari_Vt"
+    >
+      @Aquari_Vt の投稿を見る
+    </a>
+  </div>
+
+  <a
+    href="https://x.com/Aquari_Vt"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="mt-4 inline-block rounded-xl bg-sky-600 px-5 py-3 font-semibold"
+  >
+    Xを開く
+  </a>
+</section>
