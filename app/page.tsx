@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Script from "next/script";
 
 export default function AquariHomepage() {
   const [twitchSrc, setTwitchSrc] = useState("");
@@ -16,9 +17,14 @@ export default function AquariHomepage() {
     <div className="relative min-h-screen overflow-hidden text-white">
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/aquari-bg.png')" }}
+        style={{ backgroundImage: "url('/aquari-bg-optimized.webp')" }}
       />
       <div className="absolute inset-0 bg-slate-950/70" />
+
+      <Script
+        src="https://platform.twitter.com/widgets.js"
+        strategy="afterInteractive"
+      />
 
       <main className="relative z-10 mx-auto max-w-6xl px-6 py-10">
         <section className="mb-10">
@@ -55,9 +61,7 @@ export default function AquariHomepage() {
                 alt="Aquari shrine outfit visual"
                 className="w-full rounded-xl"
               />
-              <p className="mt-4 text-sm text-gray-300">
-                別衣装ビジュアル
-              </p>
+              <p className="mt-4 text-sm text-gray-300">別衣装ビジュアル</p>
             </div>
           </div>
 
@@ -65,11 +69,10 @@ export default function AquariHomepage() {
             <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">Aquariについて</h2>
               <p className="text-gray-300 leading-7">
-  SIRIUS GAMINGストリーマー部門所属の九尾系Vtuber。
-  神社に仕える狐巫女でありながら、人間に紛れて日々ゲーム配信を行っている。
-  旅やサッカー観戦を好み、PCゲームではFPSを中心に活動中。
-</p>
-             
+                SIRIUS GAMINGストリーマー部門所属の九尾系Vtuber。
+                神社に仕える狐巫女でありながら、人間に紛れて日々ゲーム配信を行っている。
+                旅やサッカー観戦を好み、PCゲームではFPSを中心に活動中。
+              </p>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
@@ -137,6 +140,20 @@ export default function AquariHomepage() {
               className="rounded-xl"
             />
           )}
+        </section>
+
+        <section className="mb-12 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
+          <h2 className="mb-4 text-2xl font-bold">Xの最新投稿</h2>
+          <div className="overflow-hidden rounded-xl bg-white">
+            <a
+              className="twitter-timeline"
+              data-theme="dark"
+              data-height="700"
+              href="https://x.com/Aquari_Vt"
+            >
+              Posts by @Aquari_Vt
+            </a>
+          </div>
         </section>
       </main>
     </div>
