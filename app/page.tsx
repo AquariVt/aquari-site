@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 
+declare global {
+  interface Window {
+    twttr?: {
+      widgets?: {
+        load: (element?: HTMLElement) => void;
+      };
+    };
+  }
+}
+
 export default function AquariHomepage() {
   const [twitchSrc, setTwitchSrc] = useState("");
 
@@ -11,19 +21,28 @@ export default function AquariHomepage() {
     setTwitchSrc(
       `https://player.twitch.tv/?channel=aquarivt&parent=${hostname}`
     );
+
+    const timer = setTimeout(() => {
+      window.twttr?.widgets?.load();
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/aquari-bg-optimized.webp')" }}
+        style={{ backgroundImage: "url('/aquari-bg.png')" }}
       />
       <div className="absolute inset-0 bg-slate-950/70" />
 
       <Script
         src="https://platform.twitter.com/widgets.js"
         strategy="afterInteractive"
+        onLoad={() => {
+          window.twttr?.widgets?.load();
+        }}
       />
 
       <main className="relative z-10 mx-auto max-w-6xl px-6 py-10">
@@ -111,8 +130,7 @@ export default function AquariHomepage() {
                   rel="noopener noreferrer"
                   className="block rounded-xl bg-gray-700 p-4"
                 >
-                  制作者 DIAさん
-                </a>
+                  制作者 DIAさん                </a>
               </div>
             </div>
           </div>
@@ -143,26 +161,30 @@ export default function AquariHomepage() {
         </section>
 
         <section className="mb-12 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
-  <h2 className="mb-4 text-2xl font-bold">Xの最新投稿</h2>
+          <h2 className="mb-4 text-2xl font-bold">Xの最新投稿</h2>
 
-  <div className="overflow-hidden rounded-xl bg-white p-2">
-    <a
-      className="twitter-timeline"
-      data-theme="dark"
-      data-height="700"
-      data-chrome="noheader nofooter"
-      href="https://twitter.com/Aquari_Vt"
-    >
-      @Aquari_Vt の投稿を見る
-    </a>
-  </div>
+          <div className="overflow-hidden rounded-xl bg-white p-2 min-h-[700px]">
+            <a
+              className="twitter-timeline"
+              data-theme="dark"
+              data-height="700"
+              data-chrome="noheader nofooter transparent"
+              href="https://twitter.com/Aquari_Vt"
+            >
+              @Aquari_Vt の投稿を見る
+            </a>
+          </div>
 
-  <a
-    href="https://x.com/Aquari_Vt"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="mt-4 inline-block rounded-xl bg-sky-600 px-5 py-3 font-semibold"
-  >
-    Xを開く
-  </a>
-</section>
+          <a
+            href="https://x.com/Aquari_Vt"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block rounded-xl bg-sky-600 px-5 py-3 font-semibold"
+          >
+            Xを開く
+          </a>
+        </section>
+      </main>
+    </div>
+  );
+}
