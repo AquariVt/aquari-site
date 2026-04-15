@@ -16,7 +16,7 @@ export default function AquariHomepage() {
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/aquari-bg.png')" }}
+style={{ backgroundImage: "url('/aquari-bg.png')" }}
       />
       <div className="absolute inset-0 bg-slate-950/75" />
 
