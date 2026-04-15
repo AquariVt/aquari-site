@@ -37,7 +37,7 @@ export default function AquariHomepage() {
 
         <div className="w-full max-w-3xl mb-10">
           <iframe
-            src="https://player.twitch.tv/?channel=aquarivt&parent=localhost"
+            src="https://player.twitch.tv/?channel=aquarivt&parent=aquari-site.vercel.app"
             height="400"
             width="100%"
             allowFullScreen
