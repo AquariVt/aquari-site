@@ -65,10 +65,11 @@ export default function AquariHomepage() {
             <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">Aquariについて</h2>
               <p className="text-gray-300 leading-7">
-                狐巫女の世界観をベースに活動するVtuber。
-                FPSを中心に雑談や参加型配信も行っています。
-                青を基調にしたビジュアルと、やわらかい雰囲気の配信が特徴です。
-              </p>
+  SIRIUS GAMINGストリーマー部門所属の九尾系Vtuber。
+  神社に仕える狐巫女でありながら、人間に紛れて日々ゲーム配信を行っている。
+  旅やサッカー観戦を好み、PCゲームではFPSを中心に活動中。
+</p>
+             
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
