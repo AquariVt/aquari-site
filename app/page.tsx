@@ -189,44 +189,45 @@ export default function Home() {
               />
             </section>
 
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-4 text-2xl font-bold">
-                {latest.currentLive ? "YouTube配信中" : "最新アーカイブ"}
-              </h2>
+           <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+  <h2 className="mb-4 text-2xl font-bold">
+    {latest.currentLive ? "YouTube配信中" : "最新アーカイブ"}
+  </h2>
 
-              {loading ? (
-                <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
-                  読み込み中...
-                </div>
-              ) : youtubeDisplay ? (
-                <div className="space-y-4">
-                  <iframe
-                    className="aspect-video w-full rounded-2xl"
-                    src={`https://www.youtube.com/embed/${youtubeDisplay.id}`}
-                    title={youtubeDisplay.title}
-                    allowFullScreen
-                  />
-                  <a
-                    href={youtubeDisplay.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-sky-400 underline underline-offset-4 hover:text-sky-300"
-                  >
-                    {youtubeDisplay.title}
-                  </a>
-                  {!latest.currentLive && (
-                    <p className="text-sm text-slate-400">
-                      ※現在配信していないため、最新アーカイブを表示しています
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-slate-300">
-                  表示できる配信またはアーカイブが見つかりませんでした。
-                </p>
-              )}
-            </section>
-
+  {loading ? (
+    <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
+      読み込み中...
+    </div>
+  ) : youtubeDisplay ? (
+    <div className="space-y-4">
+      <iframe
+        className="aspect-video w-full rounded-2xl"
+        src={`https://www.youtube-nocookie.com/embed/${youtubeDisplay.id}`}
+        title={youtubeDisplay.title}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+      <a
+        href={youtubeDisplay.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-sky-400 underline underline-offset-4 hover:text-sky-300"
+      >
+        {youtubeDisplay.title}
+      </a>
+      {!latest.currentLive && (
+        <p className="text-sm text-slate-400">
+          ※現在配信していないため、最新アーカイブを表示しています
+        </p>
+      )}
+    </div>
+  ) : (
+    <p className="text-slate-300">
+      表示できる配信またはアーカイブが見つかりませんでした。
+    </p>
+  )}
+</section>
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
 
