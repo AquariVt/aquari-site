@@ -32,7 +32,7 @@ export default function Home() {
 
   const fixedVideoId = "HuQbQ9e4eJ8";
   const fixedVideoUrl = "https://youtu.be/HuQbQ9e4eJ8";
-  const fixedThumbnail = `https://img.youtube.com/vi/${fixedVideoId}/maxresdefault.jpg`;
+　const fixedThumbnail = `https://img.youtube.com/vi/${fixedVideoId}/hqdefault.jpg`;
 
   const bunnyVisuals: VisualItem[] = [
     { src: "/aquari-full.png", alt: "Aquari バニー衣装ビジュアル 1" },
