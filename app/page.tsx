@@ -6,40 +6,54 @@ export default function Home() {
   const [twitchSrc, setTwitchSrc] = useState("");
 
   useEffect(() => {
-    const hostname = window.location.hostname || "localhost";
-    setTwitchSrc(
-      `https://player.twitch.tv/?channel=aquarivt&parent=${hostname}`
-    );
+    const host = window.location.hostname || "localhost";
+    setTwitchSrc(`https://player.twitch.tv/?channel=aquarivt&parent=${host}`);
   }, []);
 
   return (
-    <main className="min-h-screen text-white relative">
+    <main className="relative min-h-screen overflow-hidden text-white">
+      {/* Background */}
       <div
-        className="fixed inset-0 -z-10 bg-cover bg-center"
+        className="fixed inset-0 -z-20 bg-cover bg-center"
         style={{ backgroundImage: "url('/aquari-bg.png')" }}
       />
-      <div className="fixed inset-0 -z-10 bg-black/70 backdrop-blur-sm" />
+      <div className="fixed inset-0 -z-10 bg-slate-950/75 backdrop-blur-[2px]" />
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <header className="mb-12 text-center">
-          <h1 className="text-5xl font-bold mb-3">Aquari</h1>
-          <p className="text-gray-300">SIRIUS GAMING / 九尾系Vtuber</p>
+      <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-12">
+        {/* Hero */}
+        <header className="mb-10 rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md md:p-10">
+          <div className="inline-flex items-center rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
+            SIRIUS GAMING / 九尾系Vtuber
+          </div>
+
+          <h1 className="mt-5 text-5xl font-black tracking-tight md:text-7xl">
+            Aquari
+          </h1>
+
+          <p className="mt-5 max-w-3xl text-base leading-8 text-slate-200 md:text-lg">
+            SIRIUS GAMINGストリーマー部門所属の九尾系Vtuber。
+            神社に仕える狐巫女でありながら、人間に紛れて日々ゲーム配信を行っている。
+            旅やサッカー観戦を好み、PCゲームではFPSを中心に活動中。
+          </p>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-2">
+        {/* Top Grid */}
+        <section className="grid gap-8 lg:grid-cols-2">
+          {/* Left */}
           <div className="space-y-8">
-            <section className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-xl">
-              <h2 className="text-xl font-bold mb-4">プロフィール</h2>
-              <p className="text-gray-200 leading-8">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+              <h2 className="mb-4 text-2xl font-bold">プロフィール</h2>
+              <p className="leading-8 text-slate-200">
                 SIRIUS GAMINGストリーマー部門所属の九尾系Vtuber。
                 神社に仕える狐巫女でありながら、人間に紛れて日々ゲーム配信を行っている。
                 旅やサッカー観戦を好み、PCゲームではFPSを中心に活動中。
               </p>
             </section>
 
-            <section className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-xl">
-              <h2 className="text-xl font-bold mb-4">タグ一覧</h2>
-              <div className="space-y-2 text-gray-200">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+              <h2 className="mb-4 text-2xl font-bold">タグ一覧</h2>
+
+              <div className="space-y-3 text-slate-200">
                 <p>
                   配信（切り抜きも）：
                   <a
@@ -51,6 +65,7 @@ export default function Home() {
                     #Aquari配信
                   </a>
                 </p>
+
                 <p>
                   エゴサ：
                   <a
@@ -62,6 +77,7 @@ export default function Home() {
                     #アクエリ水族館
                   </a>
                 </p>
+
                 <p>
                   ファンアート：
                   <a
@@ -73,6 +89,7 @@ export default function Home() {
                     #アクエリアート
                   </a>
                 </p>
+
                 <p>
                   R18FA用：
                   <a
@@ -87,14 +104,15 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-xl">
-              <h2 className="text-xl font-bold mb-4">SNS / Channel</h2>
-              <div className="space-y-3">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+              <h2 className="mb-4 text-2xl font-bold">SNS / Channel</h2>
+
+              <div className="grid gap-3">
                 <a
                   href="https://x.com/Aquari_Vt"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-sky-500 hover:bg-sky-600 p-3 rounded-lg text-center font-bold transition"
+                  className="rounded-2xl bg-sky-500 px-4 py-3 text-center font-bold transition hover:bg-sky-600"
                 >
                   X
                 </a>
@@ -103,7 +121,7 @@ export default function Home() {
                   href="https://www.youtube.com/channel/UCBvSY3MYEkkJ194_Zdjp2Jw"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-red-500 hover:bg-red-600 p-3 rounded-lg text-center font-bold transition"
+                  className="rounded-2xl bg-red-500 px-4 py-3 text-center font-bold transition hover:bg-red-600"
                 >
                   YouTube
                 </a>
@@ -112,7 +130,7 @@ export default function Home() {
                   href="https://www.twitch.tv/aquarivt"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-purple-600 hover:bg-purple-700 p-3 rounded-lg text-center font-bold transition"
+                  className="rounded-2xl bg-purple-600 px-4 py-3 text-center font-bold transition hover:bg-purple-700"
                 >
                   Twitch
                 </a>
@@ -121,7 +139,7 @@ export default function Home() {
                   href="https://x.com/AtelierDia"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-gray-700 hover:bg-gray-600 p-3 rounded-lg text-center font-bold transition"
+                  className="rounded-2xl bg-slate-700 px-4 py-3 text-center font-bold transition hover:bg-slate-600"
                 >
                   DIAさん
                 </a>
@@ -129,50 +147,73 @@ export default function Home() {
             </section>
           </div>
 
+          {/* Right */}
           <div className="space-y-8">
-            <section className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-xl">
-              <h2 className="text-xl font-bold mb-4">固定動画</h2>
-              <iframe
-                className="w-full aspect-video rounded-xl"
-                src="https://www.youtube.com/embed/HuQbQ9e4eJ8"
-                title="YouTube video"
-                allowFullScreen
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+              <h2 className="mb-4 text-2xl font-bold">メインビジュアル</h2>
+              <img
+                src="/aquari-full.png"
+                alt="Aquari main visual"
+                className="w-full rounded-2xl shadow-xl"
               />
             </section>
 
-            <section className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-xl">
-              <h2 className="text-xl font-bold mb-4">YouTube配信</h2>
-              <iframe
-                className="w-full aspect-video rounded-xl"
-                src="https://www.youtube.com/embed/live_stream?channel=UCBvSY3MYEkkJ194_Zdjp2Jw"
-                title="YouTube Live"
-                allowFullScreen
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+              <h2 className="mb-4 text-2xl font-bold">別衣装ビジュアル</h2>
+              <img
+                src="/aquari-shrine.png"
+                alt="Aquari shrine visual"
+                className="w-full rounded-2xl shadow-xl"
               />
-              <p className="text-sm text-gray-400 mt-2">
-                ※配信していない場合は表示されません
-              </p>
-            </section>
-
-            <section className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-xl">
-              <h2 className="text-xl font-bold mb-4">Twitch配信</h2>
-              {twitchSrc ? (
-                <iframe
-                  src={twitchSrc}
-                  title="Twitch Live"
-                  className="w-full rounded-xl"
-                  height="420"
-                  allowFullScreen
-                />
-              ) : (
-                <div className="w-full h-[420px] rounded-xl bg-black/30 flex items-center justify-center text-gray-300">
-                  読み込み中...
-                </div>
-              )}
             </section>
           </div>
-        </div>
+        </section>
 
-        <footer className="mt-16 text-center text-gray-400 text-sm">
+        {/* Media */}
+        <section className="mt-8 grid gap-8 lg:grid-cols-3">
+          <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <h2 className="mb-4 text-2xl font-bold">固定動画</h2>
+            <iframe
+              className="aspect-video w-full rounded-2xl"
+              src="https://www.youtube.com/embed/HuQbQ9e4eJ8"
+              title="Aquari fixed video"
+              allowFullScreen
+            />
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <h2 className="mb-4 text-2xl font-bold">YouTube配信</h2>
+            <iframe
+              className="aspect-video w-full rounded-2xl"
+              src="https://www.youtube.com/embed/live_stream?channel=UCBvSY3MYEkkJ194_Zdjp2Jw"
+              title="Aquari YouTube Live"
+              allowFullScreen
+            />
+            <p className="mt-2 text-sm text-slate-400">
+              ※配信していない場合は表示されません
+            </p>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
+
+            {twitchSrc ? (
+              <iframe
+                src={twitchSrc}
+                title="Aquari Twitch Live"
+                className="w-full rounded-2xl"
+                height="320"
+                allowFullScreen
+              />
+            ) : (
+              <div className="flex h-[320px] items-center justify-center rounded-2xl bg-black/30 text-slate-300">
+                読み込み中...
+              </div>
+            )}
+          </section>
+        </section>
+
+        <footer className="mt-14 text-center text-sm text-slate-400">
           © Aquari
         </footer>
       </div>
