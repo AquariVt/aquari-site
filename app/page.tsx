@@ -147,7 +147,7 @@ export default function Home() {
         </div>
 
         <footer className="mt-16 text-center text-gray-400 text-sm">
-          © Aquari / 制作者 DIA
+          © Aquari
         </footer>
       </div>
     </main>
