@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
-const API_KEY = process.env.YOUTUBE_API_KEY;AIzaSyCEGKBap7YoNFZcPwGnOPOBjaPGsKtx6jk
-const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;UCBvSY3MYEkkJ194_Zdjp2Jw
-
+const API_KEY = process.env.YOUTUBE_API_KEY=あなたのAPIキー
+const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID=UCBvSY3MYEkkJ194_Zdjp2Jw
 export async function GET() {
   try {
     if (!API_KEY) {
