@@ -126,7 +126,7 @@ export default function Home() {
               <h2 className="mb-4 text-2xl font-bold">YouTube配信</h2>
               <iframe
                 className="aspect-video w-full rounded-2xl"
-                src="https://www.youtube.com/embed/live_stream?channel=UCBvSY3MYEkkJ194_Zdjp2Jw"
+                src="https://www.youtube.com/c/AquariCh"
                 title="Aquari YouTube Live"
                 allowFullScreen
               />

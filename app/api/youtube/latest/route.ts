@@ -35,6 +35,17 @@ type VideoItem = {
   };
 };
 
+type SearchItem = {
+  id?: {
+    videoId?: string;
+  };
+  snippet?: {
+    title?: string;
+    description?: string;
+    thumbnails?: ThumbnailSet;
+  };
+};
+
 function pickThumbnail(thumbnails?: ThumbnailSet): string {
   return (
     thumbnails?.maxres?.url ||
@@ -110,46 +121,43 @@ export async function GET() {
       .filter(Boolean)
       .join(",");
 
-    if (!uploadVideoIds) {
-      return NextResponse.json({
-        latestShort: null,
-        latestArchive: null,
+    let latestShort = null;
+
+    if (uploadVideoIds) {
+      const uploadVideosRes = await youtubeFetch("videos", {
+        part: "snippet,contentDetails",
+        id: uploadVideoIds,
       });
+
+      const uploadVideos = (uploadVideosRes.items || []) as VideoItem[];
+
+      latestShort =
+        uploadVideos
+          .filter((video) => {
+            const title = (video.snippet?.title || "").toLowerCase();
+            const description = (video.snippet?.description || "").toLowerCase();
+            const duration = parseISODurationToSeconds(
+              video.contentDetails?.duration
+            );
+            const isLiveLike =
+              video.snippet?.liveBroadcastContent &&
+              video.snippet.liveBroadcastContent !== "none";
+
+            if (isLiveLike) return false;
+
+            return (
+              title.includes("#shorts") ||
+              description.includes("#shorts") ||
+              duration <= 180
+            );
+          })
+          .map((video) => ({
+            id: video.id,
+            title: video.snippet?.title || "Short動画",
+            thumbnail: pickThumbnail(video.snippet?.thumbnails),
+            url: `https://www.youtube.com/watch?v=${video.id}`,
+          }))[0] || null;
     }
-
-    const uploadVideosRes = await youtubeFetch("videos", {
-      part: "snippet,contentDetails",
-      id: uploadVideoIds,
-    });
-
-    const uploadVideos = (uploadVideosRes.items || []) as VideoItem[];
-
-    const latestShort =
-      uploadVideos
-        .filter((video) => {
-          const title = (video.snippet?.title || "").toLowerCase();
-          const description = (video.snippet?.description || "").toLowerCase();
-          const duration = parseISODurationToSeconds(
-            video.contentDetails?.duration
-          );
-          const isLiveLike =
-            video.snippet?.liveBroadcastContent &&
-            video.snippet.liveBroadcastContent !== "none";
-
-          if (isLiveLike) return false;
-
-          return (
-            title.includes("#shorts") ||
-            description.includes("#shorts") ||
-            duration <= 180
-          );
-        })
-        .map((video) => ({
-          id: video.id,
-          title: video.snippet?.title || "Short動画",
-          thumbnail: pickThumbnail(video.snippet?.thumbnails),
-          url: `https://www.youtube.com/watch?v=${video.id}`,
-        }))[0] || null;
 
     const archiveSearchRes = await youtubeFetch("search", {
       part: "snippet",
@@ -161,7 +169,7 @@ export async function GET() {
     });
 
     const archiveIds = (archiveSearchRes.items || [])
-      .map((item: any) => item.id?.videoId)
+      .map((item: SearchItem) => item.id?.videoId)
       .filter(Boolean)
       .join(",");
 
@@ -169,7 +177,7 @@ export async function GET() {
 
     if (archiveIds) {
       const archiveVideosRes = await youtubeFetch("videos", {
-        part: "snippet,contentDetails",
+        part: "snippet",
         id: archiveIds,
       });
 
@@ -186,9 +194,31 @@ export async function GET() {
       }
     }
 
+    const liveSearchRes = await youtubeFetch("search", {
+      part: "snippet",
+      channelId: CHANNEL_ID,
+      eventType: "live",
+      maxResults: "1",
+      order: "date",
+      type: "video",
+    });
+
+    const liveItem = (liveSearchRes.items || [])[0] as SearchItem | undefined;
+
+    const currentLive =
+      liveItem?.id?.videoId
+        ? {
+            id: liveItem.id.videoId,
+            title: liveItem.snippet?.title || "ライブ配信中",
+            thumbnail: pickThumbnail(liveItem.snippet?.thumbnails),
+            url: `https://www.youtube.com/watch?v=${liveItem.id.videoId}`,
+          }
+        : null;
+
     return NextResponse.json({
       latestShort,
       latestArchive,
+      currentLive,
     });
   } catch (error) {
     console.error("youtube latest route error:", error);
@@ -197,6 +227,7 @@ export async function GET() {
       {
         latestShort: null,
         latestArchive: null,
+        currentLive: null,
       },
       { status: 200 }
     );
