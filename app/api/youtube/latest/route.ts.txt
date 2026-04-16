@@ -1,0 +1,165 @@
+import { NextResponse } from "next/server";
+
+const API_BASE = "https://www.googleapis.com/youtube/v3";
+const CHANNEL_ID = "UCBvSY3MYEkkJ194_Zdjp2Jw";
+
+type YouTubeSearchItem = {
+  id: { videoId?: string };
+  snippet: {
+    title: string;
+    description: string;
+    thumbnails?: {
+      high?: { url: string };
+      medium?: { url: string };
+      default?: { url: string };
+    };
+  };
+};
+
+type VideoDetailsItem = {
+  id: string;
+  contentDetails?: {
+    duration?: string;
+  };
+};
+
+function parseISODurationToSeconds(duration?: string): number {
+  if (!duration) return Number.MAX_SAFE_INTEGER;
+
+  const match = duration.match(
+    /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/
+  );
+
+  if (!match) return Number.MAX_SAFE_INTEGER;
+
+  const hours = Number(match[1] || 0);
+  const minutes = Number(match[2] || 0);
+  const seconds = Number(match[3] || 0);
+
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+async function youtubeFetch(path: string, params: Record<string, string>) {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    throw new Error("YOUTUBE_API_KEY is missing");
+  }
+
+  const url = new URL(`${API_BASE}/${path}`);
+  Object.entries({ ...params, key: apiKey }).forEach(([k, v]) => {
+    url.searchParams.set(k, v);
+  });
+
+  const res = await fetch(url.toString(), { next: { revalidate: 300 } });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`YouTube API error: ${res.status} ${text}`);
+  }
+
+  return res.json();
+}
+
+export async function GET() {
+  try {
+    // 最新アーカイブ
+    const latestArchiveRes = await youtubeFetch("search", {
+      part: "snippet",
+      channelId: CHANNEL_ID,
+      eventType: "completed",
+      maxResults: "1",
+      order: "date",
+      type: "video",
+    });
+
+    const archiveItem = latestArchiveRes.items?.[0] as YouTubeSearchItem | undefined;
+
+    // 最新アップロード候補（Shortを探す）
+    const latestUploadsRes = await youtubeFetch("search", {
+      part: "snippet",
+      channelId: CHANNEL_ID,
+      maxResults: "10",
+      order: "date",
+      type: "video",
+    });
+
+    const uploadItems = (latestUploadsRes.items || []) as YouTubeSearchItem[];
+    const videoIds = uploadItems
+      .map((item) => item.id.videoId)
+      .filter(Boolean)
+      .join(",");
+
+    let detailMap = new Map<string, number>();
+
+    if (videoIds) {
+      const videosRes = await youtubeFetch("videos", {
+        part: "contentDetails",
+        id: videoIds,
+      });
+
+      const details = (videosRes.items || []) as VideoDetailsItem[];
+      detailMap = new Map(
+        details.map((item) => [
+          item.id,
+          parseISODurationToSeconds(item.contentDetails?.duration),
+        ])
+      );
+    }
+
+    const shortItem =
+      uploadItems.find((item) => {
+        const id = item.id.videoId;
+        if (!id) return false;
+
+        const title = item.snippet.title.toLowerCase();
+        const description = item.snippet.description.toLowerCase();
+        const durationSeconds = detailMap.get(id) ?? Number.MAX_SAFE_INTEGER;
+
+        return (
+          title.includes("#shorts") ||
+          description.includes("#shorts") ||
+          durationSeconds <= 180
+        );
+      }) || null;
+
+    const latestShort = shortItem
+      ? {
+          id: shortItem.id.videoId!,
+          title: shortItem.snippet.title,
+          thumbnail:
+            shortItem.snippet.thumbnails?.high?.url ||
+            shortItem.snippet.thumbnails?.medium?.url ||
+            shortItem.snippet.thumbnails?.default?.url ||
+            "",
+          url: `https://www.youtube.com/watch?v=${shortItem.id.videoId}`,
+        }
+      : null;
+
+    const latestArchive = archiveItem?.id.videoId
+      ? {
+          id: archiveItem.id.videoId,
+          title: archiveItem.snippet.title,
+          thumbnail:
+            archiveItem.snippet.thumbnails?.high?.url ||
+            archiveItem.snippet.thumbnails?.medium?.url ||
+            archiveItem.snippet.thumbnails?.default?.url ||
+            "",
+          url: `https://www.youtube.com/watch?v=${archiveItem.id.videoId}`,
+        }
+      : null;
+
+    return NextResponse.json({
+      latestShort,
+      latestArchive,
+    });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      {
+        latestShort: null,
+        latestArchive: null,
+      },
+      { status: 200 }
+    );
+  }
+}
