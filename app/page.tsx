@@ -25,9 +25,11 @@ export default function Home() {
           <p className="mb-3 inline-block rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
             SIRIUS GAMING / 九尾系Vtuber
           </p>
+
           <h1 className="mb-4 text-5xl font-bold drop-shadow-lg md:text-6xl">
             Aquari
           </h1>
+
           <p className="max-w-3xl text-lg leading-8 text-gray-200">
             神社に仕える狐巫女Vtuber。人間に紛れてゲーム配信をしながら、
             FPSを中心に活動中。
@@ -42,17 +44,21 @@ export default function Home() {
                 alt="Aquari main visual"
                 className="w-full rounded-xl shadow-xl"
               />
-              <p className="mt-4 text-sm text-gray-200">
-                イラスト制作：
-                <a
-                  href="https://x.com/AtelierDia"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-1 text-sky-400 underline underline-offset-4 hover:text-sky-300"
-                >
-                  DIA（@AtelierDia）
-                </a>
-              </p>
+
+              <div className="mt-6 rounded-xl bg-black/30 p-4 text-sm text-gray-200">
+                <p className="mb-2 font-bold text-white">制作者クレジット</p>
+                <p>
+                  イラスト制作：
+                  <a
+                    href="https://x.com/AtelierDia"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300"
+                  >
+                    DIA（@AtelierDia）
+                  </a>
+                </p>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-white/20 bg-white/10 p-4 shadow-2xl backdrop-blur-lg">
@@ -68,6 +74,7 @@ export default function Home() {
           <div className="space-y-8">
             <div className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-lg">
               <h2 className="mb-4 text-2xl font-bold">Aquariについて</h2>
+
               <p className="text-gray-200 leading-8">
                 SIRIUS GAMINGストリーマー部門所属の九尾系Vtuber。
                 神社に仕える狐巫女でありながら、人間に紛れて日々ゲーム配信を行っている。
@@ -76,6 +83,7 @@ export default function Home() {
 
               <div className="mt-8">
                 <h3 className="mb-4 text-xl font-bold">タグ一覧</h3>
+
                 <div className="space-y-3 text-gray-200">
                   <p>
                     配信（切り抜きも）：
@@ -88,6 +96,7 @@ export default function Home() {
                       #Aquari配信
                     </a>
                   </p>
+
                   <p>
                     エゴサ：
                     <a
@@ -99,6 +108,7 @@ export default function Home() {
                       #アクエリ水族館
                     </a>
                   </p>
+
                   <p>
                     ファンアートタグ：
                     <a
@@ -110,6 +120,7 @@ export default function Home() {
                       #アクエリアート
                     </a>
                   </p>
+
                   <p>
                     R18FA用：
                     <a
@@ -162,11 +173,13 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="block w-full rounded-xl bg-slate-700 px-4 py-3 text-center font-bold transition hover:bg-slate-600"
                 >
-                  制作者 DIAさん                </a>
+                  制作者 DIAさん X
+                </a>
               </div>
 
               <div className="mt-8">
                 <h3 className="mb-4 text-xl font-bold">固定動画</h3>
+
                 <div className="w-full overflow-hidden rounded-2xl shadow-2xl">
                   <iframe
                     className="aspect-video w-full"
@@ -184,6 +197,7 @@ export default function Home() {
 
         <section className="mb-10 rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-lg">
           <h2 className="mb-4 text-2xl font-bold">YouTube配信</h2>
+
           <div className="overflow-hidden rounded-2xl shadow-2xl">
             <iframe
               className="aspect-video w-full"
@@ -198,6 +212,7 @@ export default function Home() {
 
         <section className="mb-10 rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-lg">
           <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
+
           <div className="overflow-hidden rounded-2xl shadow-2xl">
             {twitchSrc ? (
               <iframe
