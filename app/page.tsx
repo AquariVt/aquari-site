@@ -162,8 +162,7 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="block w-full rounded-xl bg-slate-700 px-4 py-3 text-center font-bold transition hover:bg-slate-600"
                 >
-                  制作者 DIAさん X
-                </a>
+                  制作者 DIAさん                </a>
               </div>
 
               <div className="mt-8">
