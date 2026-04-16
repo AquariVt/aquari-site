@@ -12,6 +12,7 @@ type VideoItem = {
 type LatestResponse = {
   latestShort: VideoItem | null;
   latestArchive: VideoItem | null;
+  currentLive: VideoItem | null;
 };
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
   const [latest, setLatest] = useState<LatestResponse>({
     latestShort: null,
     latestArchive: null,
+    currentLive: null,
   });
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +31,6 @@ export default function Home() {
     const loadLatest = async () => {
       try {
         const res = await fetch("/api/youtube/latest", { cache: "no-store" });
-        if (!res.ok) throw new Error("failed to fetch latest videos");
         const data: LatestResponse = await res.json();
         setLatest(data);
       } catch (error) {
@@ -41,6 +42,8 @@ export default function Home() {
 
     loadLatest();
   }, []);
+
+  const youtubeDisplay = latest.currentLive ?? latest.latestArchive;
 
   return (
     <main className="relative min-h-screen overflow-hidden text-white">
@@ -82,10 +85,53 @@ export default function Home() {
               <h2 className="mb-4 text-2xl font-bold">タグ一覧</h2>
 
               <div className="space-y-3 text-slate-200">
-                <p>配信（切り抜きも）：<a href="https://x.com/search?q=%23Aquari%E9%85%8D%E4%BF%A1&src=typed_query" target="_blank" rel="noopener noreferrer" className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300">#Aquari配信</a></p>
-                <p>エゴサ：<a href="https://x.com/search?q=%23%E3%82%A2%E3%82%AF%E3%82%A8%E3%83%AA%E6%B0%B4%E6%97%8F%E9%A4%A8&src=typed_query" target="_blank" rel="noopener noreferrer" className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300">#アクエリ水族館</a></p>
-                <p>ファンアート：<a href="https://x.com/search?q=%23%E3%82%A2%E3%82%AF%E3%82%A8%E3%83%AA%E3%82%A2%E3%83%BC%E3%83%88&src=typed_query" target="_blank" rel="noopener noreferrer" className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300">#アクエリアート</a></p>
-                <p>R18FA用：<a href="https://x.com/search?q=%23%E3%82%A2%E3%82%AF%E3%82%A8%E3%83%AA%E9%A3%B2%E3%82%93%E3%81%A0&src=typed_query" target="_blank" rel="noopener noreferrer" className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300">#アクエリ飲んだ</a></p>
+                <p>
+                  配信（切り抜きも）：
+                  <a
+                    href="https://x.com/search?q=%23Aquari%E9%85%8D%E4%BF%A1&src=typed_query"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300"
+                  >
+                    #Aquari配信
+                  </a>
+                </p>
+
+                <p>
+                  エゴサ：
+                  <a
+                    href="https://x.com/search?q=%23%E3%82%A2%E3%82%AF%E3%82%A8%E3%83%AA%E6%B0%B4%E6%97%8F%E9%A4%A8&src=typed_query"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300"
+                  >
+                    #アクエリ水族館
+                  </a>
+                </p>
+
+                <p>
+                  ファンアート：
+                  <a
+                    href="https://x.com/search?q=%23%E3%82%A2%E3%82%AF%E3%82%A8%E3%83%AA%E3%82%A2%E3%83%BC%E3%83%88&src=typed_query"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300"
+                  >
+                    #アクエリアート
+                  </a>
+                </p>
+
+                <p>
+                  R18FA用：
+                  <a
+                    href="https://x.com/search?q=%23%E3%82%A2%E3%82%AF%E3%82%A8%E3%83%AA%E9%A3%B2%E3%82%93%E3%81%A0&src=typed_query"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-sky-400 underline underline-offset-4 hover:text-sky-300"
+                  >
+                    #アクエリ飲んだ
+                  </a>
+                </p>
               </div>
             </section>
 
@@ -93,21 +139,42 @@ export default function Home() {
               <h2 className="mb-4 text-2xl font-bold">SNS / Channel</h2>
 
               <div className="grid gap-3">
-                <a href="https://x.com/Aquari_Vt" target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-sky-500 px-4 py-3 text-center font-bold transition hover:bg-sky-600">X</a>
-                <a href="https://www.youtube.com/channel/UCBvSY3MYEkkJ194_Zdjp2Jw" target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-red-500 px-4 py-3 text-center font-bold transition hover:bg-red-600">YouTube</a>
-                <a href="https://www.twitch.tv/aquarivt" target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-purple-600 px-4 py-3 text-center font-bold transition hover:bg-purple-700">Twitch</a>
-                <a href="https://x.com/AtelierDia" target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-slate-700 px-4 py-3 text-center font-bold transition hover:bg-slate-600">DIAさん</a>
+                <a
+                  href="https://x.com/Aquari_Vt"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl bg-sky-500 px-4 py-3 text-center font-bold transition hover:bg-sky-600"
+                >
+                  X
+                </a>
+
+                <a
+                  href="https://www.youtube.com/channel/UCBvSY3MYEkkJ194_Zdjp2Jw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl bg-red-500 px-4 py-3 text-center font-bold transition hover:bg-red-600"
+                >
+                  YouTube
+                </a>
+
+                <a
+                  href="https://www.twitch.tv/aquarivt"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl bg-purple-600 px-4 py-3 text-center font-bold transition hover:bg-purple-700"
+                >
+                  Twitch
+                </a>
+
+                <a
+                  href="https://x.com/AtelierDia"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl bg-slate-700 px-4 py-3 text-center font-bold transition hover:bg-slate-600"
+                >
+                  DIAさん
+                </a>
               </div>
-            </section>
-
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-4 text-2xl font-bold">メインビジュアル</h2>
-              <img src="/aquari-full.png" alt="Aquari main visual" className="w-full rounded-2xl shadow-xl" />
-            </section>
-
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-4 text-2xl font-bold">別衣装ビジュアル</h2>
-              <img src="/aquari-shrine.png" alt="Aquari shrine visual" className="w-full rounded-2xl shadow-xl" />
             </section>
           </div>
 
@@ -116,27 +183,53 @@ export default function Home() {
               <h2 className="mb-4 text-2xl font-bold">固定動画</h2>
               <iframe
                 className="aspect-video w-full rounded-2xl"
-                src="https://www.youtube.com/embed/HuQbQ9e4eJ8"
+                src="https://www.youtube.com/channel/UCBvSY3MYEkkJ194_Zdjp2Jw"
                 title="Aquari fixed video"
                 allowFullScreen
               />
             </section>
 
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-4 text-2xl font-bold">YouTube配信</h2>
-              <iframe
-                className="aspect-video w-full rounded-2xl"
-                src="https://www.youtube.com/c/AquariCh"
-                title="Aquari YouTube Live"
-                allowFullScreen
-              />
-              <p className="mt-2 text-sm text-slate-400">
-                ※配信していない場合は表示されません
-              </p>
+              <h2 className="mb-4 text-2xl font-bold">
+                {latest.currentLive ? "YouTube配信中" : "最新アーカイブ"}
+              </h2>
+
+              {loading ? (
+                <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
+                  読み込み中...
+                </div>
+              ) : youtubeDisplay ? (
+                <div className="space-y-4">
+                  <iframe
+                    className="aspect-video w-full rounded-2xl"
+                    src={`https://www.youtube.com/embed/${youtubeDisplay.id}`}
+                    title={youtubeDisplay.title}
+                    allowFullScreen
+                  />
+                  <a
+                    href={youtubeDisplay.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-sky-400 underline underline-offset-4 hover:text-sky-300"
+                  >
+                    {youtubeDisplay.title}
+                  </a>
+                  {!latest.currentLive && (
+                    <p className="text-sm text-slate-400">
+                      ※現在配信していないため、最新アーカイブを表示しています
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-slate-300">
+                  表示できる配信またはアーカイブが見つかりませんでした。
+                </p>
+              )}
             </section>
 
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
+
               {twitchSrc ? (
                 <iframe
                   src={twitchSrc}
@@ -154,6 +247,7 @@ export default function Home() {
 
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">最新のShort動画</h2>
+
               {loading ? (
                 <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
                   読み込み中...
@@ -176,35 +270,9 @@ export default function Home() {
                   </a>
                 </div>
               ) : (
-                <p className="text-slate-300">最新のShort動画が見つかりませんでした。</p>
-              )}
-            </section>
-
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-4 text-2xl font-bold">最新のアーカイブ</h2>
-              {loading ? (
-                <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
-                  読み込み中...
-                </div>
-              ) : latest.latestArchive ? (
-                <div className="space-y-4">
-                  <iframe
-                    className="aspect-video w-full rounded-2xl"
-                    src={`https://www.youtube.com/embed/${latest.latestArchive.id}`}
-                    title={latest.latestArchive.title}
-                    allowFullScreen
-                  />
-                  <a
-                    href={latest.latestArchive.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-sky-400 underline underline-offset-4 hover:text-sky-300"
-                  >
-                    {latest.latestArchive.title}
-                  </a>
-                </div>
-              ) : (
-                <p className="text-slate-300">最新のアーカイブが見つかりませんでした。</p>
+                <p className="text-slate-300">
+                  最新のShort動画が見つかりませんでした。
+                </p>
               )}
             </section>
           </div>
