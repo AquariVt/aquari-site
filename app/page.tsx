@@ -1,6 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 export default function Home() {
+  const [twitchSrc, setTwitchSrc] = useState("");
+
+  useEffect(() => {
+    const hostname = window.location.hostname || "localhost";
+    setTwitchSrc(
+      `https://player.twitch.tv/?channel=aquarivt&parent=${hostname}`
+    );
+  }, []);
+
   return (
     <main className="min-h-screen text-white relative">
       <div
@@ -12,9 +23,7 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-6 py-10">
         <header className="mb-12 text-center">
           <h1 className="text-5xl font-bold mb-3">Aquari</h1>
-          <p className="text-gray-300">
-            SIRIUS GAMING / 九尾系Vtuber
-          </p>
+          <p className="text-gray-300">SIRIUS GAMING / 九尾系Vtuber</p>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-2">
@@ -142,6 +151,23 @@ export default function Home() {
               <p className="text-sm text-gray-400 mt-2">
                 ※配信していない場合は表示されません
               </p>
+            </section>
+
+            <section className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-xl">
+              <h2 className="text-xl font-bold mb-4">Twitch配信</h2>
+              {twitchSrc ? (
+                <iframe
+                  src={twitchSrc}
+                  title="Twitch Live"
+                  className="w-full rounded-xl"
+                  height="420"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-[420px] rounded-xl bg-black/30 flex items-center justify-center text-gray-300">
+                  読み込み中...
+                </div>
+              )}
             </section>
           </div>
         </div>
