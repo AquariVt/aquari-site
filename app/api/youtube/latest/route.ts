@@ -1,76 +1,164 @@
 import { NextResponse } from "next/server";
 
-const API_KEY = process.env.YOUTUBE_API_KEY;
-const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID=
+const API_BASE = "https://www.googleapis.com/youtube/v3";
+
+type ThumbnailSet = {
+  default?: { url: string };
+  medium?: { url: string };
+  high?: { url: string };
+  standard?: { url: string };
+  maxres?: { url: string };
+};
+
+type SearchItem = {
+  id?: {
+    videoId?: string;
+  };
+  snippet?: {
+    title?: string;
+    description?: string;
+    thumbnails?: ThumbnailSet;
+  };
+};
+
+function pickThumbnail(thumbnails?: ThumbnailSet): string {
+  return (
+    thumbnails?.maxres?.url ||
+    thumbnails?.standard?.url ||
+    thumbnails?.high?.url ||
+    thumbnails?.medium?.url ||
+    thumbnails?.default?.url ||
+    ""
+  );
+}
+
+async function youtubeFetch(path: string, params: Record<string, string>) {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  const channelId = process.env.YOUTUBE_CHANNEL_ID;
+
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "YOUTUBE_API_KEY が設定されていません" },
+      { status: 500 }
+    );
+  }
+
+  if (!channelId) {
+    return NextResponse.json(
+      { error: "YOUTUBE_CHANNEL_ID が設定されていません" },
+      { status: 500 }
+    );
+  }
+
+  const url = new URL(`${API_BASE}/${path}`);
+  Object.entries({ ...params, key: apiKey }).forEach(([k, v]) => {
+    url.searchParams.set(k, v);
+  });
+
+  const res = await fetch(url.toString(), {
+    next: { revalidate: 300 },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`YouTube API error ${res.status}: ${text}`);
+  }
+
+  return res.json();
+}
+
 export async function GET() {
   try {
-    if (!API_KEY) {
-      return NextResponse.json(
-        { error: "YOUTUBE_API_KEY が設定されていません" },
-        { status: 500 }
-      );
-    }
+    const channelId = process.env.YOUTUBE_CHANNEL_ID;
 
-    if (!CHANNEL_ID) {
+    if (!channelId) {
       return NextResponse.json(
         { error: "YOUTUBE_CHANNEL_ID が設定されていません" },
         { status: 500 }
       );
     }
 
-    const url =
-      `https://www.googleapis.com/youtube/v3/search` +
-      `?part=snippet` +
-      `&channelId=${CHANNEL_ID}` +
-      `&order=date` +
-      `&maxResults=1` +
-      `&type=video` +
-      `&key=${API_KEY}`;
-
-    const res = await fetch(url, {
-      cache: "no-store",
+    // 配信中
+    const liveRes = await youtubeFetch("search", {
+      part: "snippet",
+      channelId,
+      eventType: "live",
+      type: "video",
+      maxResults: "1",
     });
 
-    const data = await res.json();
+    if (liveRes instanceof NextResponse) return liveRes;
 
-    console.log("YouTube API data:", data);
+    const liveItem = (liveRes.items || [])[0] as SearchItem | undefined;
+    const currentLive = liveItem?.id?.videoId
+      ? {
+          id: liveItem.id.videoId,
+          title: liveItem.snippet?.title || "配信中",
+          thumbnail: pickThumbnail(liveItem.snippet?.thumbnails),
+          url: `https://www.youtube.com/watch?v=${liveItem.id.videoId}`,
+        }
+      : null;
 
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: "YouTube API の取得に失敗しました", details: data },
-        { status: res.status }
-      );
-    }
+    // 最新アーカイブ
+    const archiveRes = await youtubeFetch("search", {
+      part: "snippet",
+      channelId,
+      eventType: "completed",
+      type: "video",
+      order: "date",
+      maxResults: "1",
+    });
 
-    if (!data.items || data.items.length === 0) {
-      return NextResponse.json(
-        { error: "動画が見つかりませんでした", items: [] },
-        { status: 404 }
-      );
-    }
+    if (archiveRes instanceof NextResponse) return archiveRes;
 
-    const item = data.items[0];
-    const videoId = item?.id?.videoId;
+    const archiveItem = (archiveRes.items || [])[0] as SearchItem | undefined;
+    const latestArchive = archiveItem?.id?.videoId
+      ? {
+          id: archiveItem.id.videoId,
+          title: archiveItem.snippet?.title || "最新アーカイブ",
+          thumbnail: pickThumbnail(archiveItem.snippet?.thumbnails),
+          url: `https://www.youtube.com/watch?v=${archiveItem.id.videoId}`,
+        }
+      : null;
 
-    if (!videoId) {
-      return NextResponse.json(
-        { error: "videoId が取得できませんでした", item },
-        { status: 404 }
-      );
-    }
+    // 最新Short
+    // まず #shorts を優先して探す
+    const shortRes = await youtubeFetch("search", {
+      part: "snippet",
+      channelId,
+      type: "video",
+      order: "date",
+      q: "#shorts",
+      maxResults: "5",
+    });
+
+    if (shortRes instanceof NextResponse) return shortRes;
+
+    const shortItem = (shortRes.items || [])[0] as SearchItem | undefined;
+    const latestShort = shortItem?.id?.videoId
+      ? {
+          id: shortItem.id.videoId,
+          title: shortItem.snippet?.title || "最新Short動画",
+          thumbnail: pickThumbnail(shortItem.snippet?.thumbnails),
+          url: `https://www.youtube.com/watch?v=${shortItem.id.videoId}`,
+        }
+      : null;
 
     return NextResponse.json({
-      videoId,
-      title: item?.snippet?.title ?? "",
-      thumbnail: item?.snippet?.thumbnails?.high?.url ?? "",
-      publishedAt: item?.snippet?.publishedAt ?? "",
+      currentLive,
+      latestArchive,
+      latestShort,
     });
   } catch (error) {
-    console.error("route.ts error:", error);
+    console.error("youtube latest route error:", error);
 
     return NextResponse.json(
-      { error: "サーバーエラーが発生しました" },
-      { status: 500 }
+      {
+        currentLive: null,
+        latestArchive: null,
+        latestShort: null,
+      },
+      { status: 200 }
     );
   }
 }
