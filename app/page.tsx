@@ -16,11 +16,6 @@ type LatestResponse = {
   currentLive: VideoItem | null;
 };
 
-type VisualItem = {
-  src: string;
-  alt: string;
-};
-
 export default function Home() {
   const [twitchSrc, setTwitchSrc] = useState("");
   const [latest, setLatest] = useState<LatestResponse>({
@@ -33,16 +28,6 @@ export default function Home() {
   const fixedVideoId = "HuQbQ9e4eJ8";
   const fixedVideoUrl = "https://youtu.be/HuQbQ9e4eJ8";
   const fixedThumbnail = `https://img.youtube.com/vi/${fixedVideoId}/hqdefault.jpg`;
-
-  const bunnyVisuals: VisualItem[] = [
-    { src: "/aquari-full.png", alt: "Aquari バニー衣装ビジュアル 1" },
-    { src: "/aquari-full-2.png", alt: "Aquari バニー衣装ビジュアル 2" },
-  ];
-
-  const shrineVisuals: VisualItem[] = [
-    { src: "/aquari-shrine.png", alt: "Aquari 巫女衣装ビジュアル 1" },
-    { src: "/aquari-shrine-2.png", alt: "Aquari 巫女衣装ビジュアル 2" },
-  ];
 
   useEffect(() => {
     const host = window.location.hostname || "localhost";
@@ -64,6 +49,7 @@ export default function Home() {
   }, []);
 
   const youtubeDisplay = latest.currentLive ?? latest.latestArchive;
+  const isLive = !!latest.currentLive;
 
   return (
     <main className="relative min-h-screen overflow-hidden text-white">
@@ -190,9 +176,11 @@ export default function Home() {
                   href="https://x.com/AtelierDia"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-2xl bg-slate-700 px-4 py-3 text-center font-bold transition hover:bg-slate-600"
+                  className="rounded-2xl bg-slate-700 px-4 py-3 text-center font-bold leading-6 transition hover:bg-slate-600"
                 >
-                  イラスト制作・Live2D制作者様　DIAさん
+                  イラスト制作・Live2D制作者様
+                  <br />
+                  DIAさん
                 </a>
               </div>
             </section>
@@ -234,22 +222,15 @@ export default function Home() {
                     バニー衣装
                   </h3>
 
-                  <div className="grid gap-4">
-                    {bunnyVisuals.map((image, index) => (
-                      <div
-                        key={image.src}
-                        className="overflow-hidden rounded-2xl border border-white/10 bg-white/5"
-                      >
-                        <Image
-                          src={image.src}
-                          alt={image.alt}
-                          width={1200}
-                          height={1200}
-                          className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                          priority={index === 0}
-                        />
-                      </div>
-                    ))}
+                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                    <Image
+                      src="/aquari-full.png"
+                      alt="Aquari バニー衣装ビジュアル"
+                      width={1200}
+                      height={1200}
+                      className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+                      priority
+                    />
                   </div>
                 </div>
 
@@ -258,22 +239,15 @@ export default function Home() {
                     巫女衣装
                   </h3>
 
-                  <div className="grid gap-4">
-                    {shrineVisuals.map((image, index) => (
-                      <div
-                        key={image.src}
-                        className="overflow-hidden rounded-2xl border border-white/10 bg-white/5"
-                      >
-                        <Image
-                          src={image.src}
-                          alt={image.alt}
-                          width={1200}
-                          height={1200}
-                          className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                          priority={index === 0}
-                        />
-                      </div>
-                    ))}
+                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                    <Image
+                      src="/aquari-shrine.png"
+                      alt="Aquari 巫女衣装ビジュアル"
+                      width={1200}
+                      height={1200}
+                      className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+                      priority
+                    />
                   </div>
                 </div>
               </div>
@@ -281,9 +255,18 @@ export default function Home() {
 
             <div className="grid gap-8 xl:grid-cols-2">
               <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-                <h2 className="mb-4 text-2xl font-bold">
-                  {latest.currentLive ? "YouTube配信中" : "最新アーカイブ"}
-                </h2>
+                <div className="mb-4 flex items-center gap-3">
+                  <h2 className="text-2xl font-bold">
+                    {isLive ? "YouTube配信中" : "最新アーカイブ"}
+                  </h2>
+
+                  {isLive && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white shadow-lg">
+                      <span className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
+                      LIVE
+                    </span>
+                  )}
+                </div>
 
                 {loading ? (
                   <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
@@ -298,7 +281,7 @@ export default function Home() {
                       className="block overflow-hidden rounded-2xl border border-white/10"
                     >
                       <img
-                        src={youtubeDisplay.thumbnail}
+                        src={`https://img.youtube.com/vi/${youtubeDisplay.id}/hqdefault.jpg`}
                         alt={youtubeDisplay.title}
                         className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
                       />
@@ -313,7 +296,7 @@ export default function Home() {
                       {youtubeDisplay.title}
                     </a>
 
-                    {!latest.currentLive && (
+                    {!isLive && (
                       <p className="text-sm text-slate-400">
                         ※現在配信していないため、最新アーカイブを表示しています
                       </p>
@@ -342,7 +325,7 @@ export default function Home() {
                       className="block overflow-hidden rounded-2xl border border-white/10"
                     >
                       <img
-                        src={latest.latestShort.thumbnail}
+                        src={`https://img.youtube.com/vi/${latest.latestShort.id}/hqdefault.jpg`}
                         alt={latest.latestShort.title}
                         className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
                       />
