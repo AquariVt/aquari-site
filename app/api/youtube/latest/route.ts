@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 const API_BASE = "https://www.googleapis.com/youtube/v3";
+const API_KEY = process.env.YOUTUBE_API_KEY;
+const CHANNEL_ID = "UCBvSY3MYEkkJ194_Zdjp2Jw";
 
 type ThumbnailSet = {
   default?: { url: string };
@@ -33,25 +35,15 @@ function pickThumbnail(thumbnails?: ThumbnailSet): string {
 }
 
 async function youtubeFetch(path: string, params: Record<string, string>) {
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  const channelId = process.env.YOUTUBE_CHANNEL_ID;
-
-  if (!apiKey) {
+  if (!API_KEY) {
     return NextResponse.json(
       { error: "YOUTUBE_API_KEY が設定されていません" },
       { status: 500 }
     );
   }
 
-  if (!channelId) {
-    return NextResponse.json(
-      { error: "YOUTUBE_CHANNEL_ID が設定されていません" },
-      { status: 500 }
-    );
-  }
-
   const url = new URL(`${API_BASE}/${path}`);
-  Object.entries({ ...params, key: apiKey }).forEach(([k, v]) => {
+  Object.entries({ ...params, key: API_KEY }).forEach(([k, v]) => {
     url.searchParams.set(k, v);
   });
 
@@ -69,19 +61,9 @@ async function youtubeFetch(path: string, params: Record<string, string>) {
 
 export async function GET() {
   try {
-    const channelId = process.env.YOUTUBE_CHANNEL_ID;
-
-    if (!channelId) {
-      return NextResponse.json(
-        { error: "YOUTUBE_CHANNEL_ID が設定されていません" },
-        { status: 500 }
-      );
-    }
-
-    // 配信中
     const liveRes = await youtubeFetch("search", {
       part: "snippet",
-      channelId,
+      channelId: CHANNEL_ID,
       eventType: "live",
       type: "video",
       maxResults: "1",
@@ -99,10 +81,9 @@ export async function GET() {
         }
       : null;
 
-    // 最新アーカイブ
     const archiveRes = await youtubeFetch("search", {
       part: "snippet",
-      channelId,
+      channelId: CHANNEL_ID,
       eventType: "completed",
       type: "video",
       order: "date",
@@ -121,11 +102,9 @@ export async function GET() {
         }
       : null;
 
-    // 最新Short
-    // まず #shorts を優先して探す
     const shortRes = await youtubeFetch("search", {
       part: "snippet",
-      channelId,
+      channelId: CHANNEL_ID,
       type: "video",
       order: "date",
       q: "#shorts",
