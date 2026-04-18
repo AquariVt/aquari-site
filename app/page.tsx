@@ -36,13 +36,9 @@ export default function Home() {
 
   const bunnyVisuals: VisualItem[] = [
     { src: "/aquari-full.png", alt: "Aquari バニー衣装ビジュアル 1" },
-    { src: "/aquari-full-2.png", alt: "Aquari バニー衣装ビジュアル 2" },
-  ];
 
   const shrineVisuals: VisualItem[] = [
     { src: "/aquari-shrine.png", alt: "Aquari 巫女衣装ビジュアル 1" },
-    { src: "/aquari-shrine-2.png", alt: "Aquari 巫女衣装ビジュアル 2" },
-  ];
 
   useEffect(() => {
     const host = window.location.hostname || "localhost";
