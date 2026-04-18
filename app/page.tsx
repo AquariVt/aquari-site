@@ -192,7 +192,7 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="rounded-2xl bg-slate-700 px-4 py-3 text-center font-bold transition hover:bg-slate-600"
                 >
-                  DIAさん
+                  イラスト制作・Live2D制作者様　DIAさん
                 </a>
               </div>
             </section>
