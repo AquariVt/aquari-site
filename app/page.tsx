@@ -195,33 +195,31 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-4 text-2xl font-bold">固定動画</h2>
+<section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+  <h2 className="mb-4 text-2xl font-bold">固定動画</h2>
 
-              <a
-                href={fixedVideoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block overflow-hidden rounded-2xl border border-white/10"
-              >
-                <Image
-                  src={fixedThumbnail}
-                  alt="Aquari 固定動画"
-                  width={1280}
-                  height={720}
-                  className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                />
-              </a>
+  <a
+    href={fixedVideoUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="block overflow-hidden rounded-2xl border border-white/10"
+  >
+    <img
+      src={fixedThumbnail}
+      alt="Aquari 固定動画"
+      className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+    />
+  </a>
 
-              <a
-                href={fixedVideoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex rounded-2xl bg-red-500 px-4 py-3 font-bold transition hover:bg-red-600"
-              >
-                YouTubeで見る
-              </a>
-            </section>
+  <a
+    href={fixedVideoUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="mt-4 inline-flex rounded-2xl bg-red-500 px-4 py-3 font-bold transition hover:bg-red-600"
+  >
+    YouTubeで見る
+  </a>
+</section>
           </div>
 
           <div className="space-y-8">
@@ -279,52 +277,51 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="grid gap-8 xl:grid-cols-2">
-              <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-                <h2 className="mb-4 text-2xl font-bold">
-                  {latest.currentLive ? "YouTube配信中" : "最新アーカイブ"}
-                </h2>
+<section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+  <h2 className="mb-4 text-2xl font-bold">
+    {latest.currentLive ? "YouTube配信中" : "最新アーカイブ"}
+  </h2>
 
-                {loading ? (
-                  <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
-                    読み込み中...
-                  </div>
-                ) : youtubeDisplay ? (
-                  <div className="space-y-4">
-                    <a
-                      href={youtubeDisplay.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block overflow-hidden rounded-2xl border border-white/10"
-                    >
-                      <Image
-                        src={youtubeDisplay.thumbnail}
-                        alt={youtubeDisplay.title}
-                        width={1280}
-                        height={720}
-                        className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                      />
-                    </a>
-                    <a
-                      href={youtubeDisplay.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-sky-300 underline underline-offset-4 hover:text-sky-200"
-                    >
-                      {youtubeDisplay.title}
-                    </a>
-                    {!latest.currentLive && (
-                      <p className="text-sm text-slate-400">
-                        ※現在配信していないため、最新アーカイブを表示しています
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl bg-black/20 p-4 text-slate-300">
-                    動画が見つかりませんでした。
-                  </div>
-                )}
-              </section>
+  {loading ? (
+    <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
+      読み込み中...
+    </div>
+  ) : youtubeDisplay ? (
+    <div className="space-y-4">
+      <a
+        href={youtubeDisplay.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block overflow-hidden rounded-2xl border border-white/10"
+      >
+        <img
+          src={youtubeDisplay.thumbnail}
+          alt={youtubeDisplay.title}
+          className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+        />
+      </a>
+
+      <a
+        href={youtubeDisplay.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-sky-300 underline underline-offset-4 hover:text-sky-200"
+      >
+        {youtubeDisplay.title}
+      </a>
+
+      {!latest.currentLive && (
+        <p className="text-sm text-slate-400">
+          ※現在配信していないため、最新アーカイブを表示しています
+        </p>
+      )}
+    </div>
+  ) : (
+    <div className="rounded-2xl bg-black/20 p-4 text-slate-300">
+      動画が見つかりませんでした。
+    </div>
+  )}
+</section>
 
               <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
                 <h2 className="mb-4 text-2xl font-bold">最新のShort動画</h2>
