@@ -51,7 +51,7 @@ const weeklySchedule: ScheduleItem[] = [
     time: "19:00〜",
     title: "Escape from Tarkov",
     note: "参加型配信",
-    color: "border-dark blue-400/30 bg-red-500/15",
+    color: "border-dark blue-21:37 2026/05/18 月曜日400/30 bg-red-500/15",
   },
   {
     day: "金曜日",
