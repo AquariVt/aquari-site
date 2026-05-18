@@ -44,14 +44,14 @@ const weeklySchedule: ScheduleItem[] = [
     time: "20:00〜",
     title: "Among Us",
     note: "コラボ配信",
-    color: "border-dark blue-400/30 bg-cyan-500/15",
+    color: "border-blue-900/40 bg-blue-950/40",
   },
 {
     day: "木曜日",
     time: "19:00〜",
     title: "Escape from Tarkov",
     note: "参加型配信",
-    color: "color: "border-blue-900/40 bg-blue-950/40",
+    color: "border-blue-900/40 bg-blue-950/40",
   },
   {
     day: "金曜日",
