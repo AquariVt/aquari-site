@@ -16,6 +16,45 @@ type LatestResponse = {
   currentLive: VideoItem | null;
 };
 
+type ScheduleItem = {
+  day: string;
+  time: string;
+  title: string;
+  note: string;
+  color: string;
+};
+
+const weeklySchedule: ScheduleItem[] = [
+  {
+    day: "月曜日",
+    time: "21:00〜",
+    title: "Apex Legends",
+    note: "FPS配信",
+    color: "border-red-400/30 bg-red-500/15",
+  },
+  {
+    day: "水曜日",
+    time: "22:00〜",
+    title: "雑談配信",
+    note: "まったりお話",
+    color: "border-cyan-400/30 bg-cyan-500/15",
+  },
+  {
+    day: "金曜日",
+    time: "20:00〜",
+    title: "参加型FPS",
+    note: "参加型予定",
+    color: "border-purple-400/30 bg-purple-500/15",
+  },
+  {
+    day: "日曜日",
+    time: "未定",
+    title: "調整中",
+    note: "予定変更あり",
+    color: "border-slate-400/30 bg-slate-500/15",
+  },
+];
+
 export default function Home() {
   const [twitchSrc, setTwitchSrc] = useState("");
   const [latest, setLatest] = useState<LatestResponse>({
@@ -74,19 +113,17 @@ export default function Home() {
             神社に仕える狐巫女でありながら、人間に紛れて日々ゲーム配信を行っている。
             旅やサッカー観戦を好み、PCゲームではFPSを中心に活動中。
           </p>
+
+          {isLive && (
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-red-300/40 bg-red-500 px-4 py-2 text-sm font-bold text-white shadow-[0_0_20px_rgba(239,68,68,0.45)]">
+              <span className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
+              現在YouTube配信中
+            </div>
+          )}
         </header>
 
         <section className="grid gap-8 lg:grid-cols-[0.95fr_1.25fr]">
           <div className="space-y-8">
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-4 text-2xl font-bold">プロフィール</h2>
-              <p className="leading-8 text-slate-200">
-                SIRIUS GAMINGストリーマー部門所属の九尾系Vtuber。
-                神社に仕える狐巫女でありながら、人間に紛れて日々ゲーム配信を行っている。
-                旅やサッカー観戦を好み、PCゲームではFPSを中心に活動中。
-              </p>
-            </section>
-
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">タグ一覧</h2>
 
@@ -183,6 +220,42 @@ export default function Home() {
                   DIAさん
                 </a>
               </div>
+            </section>
+
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+              <div className="mb-6 flex items-center justify-between gap-3">
+                <h2 className="text-2xl font-bold">配信スケジュール</h2>
+                <span className="rounded-full bg-cyan-500/20 px-3 py-1 text-xs text-cyan-200">
+                  Weekly
+                </span>
+              </div>
+
+              <div className="grid gap-4">
+                {weeklySchedule.map((item) => (
+                  <div
+                    key={`${item.day}-${item.time}-${item.title}`}
+                    className={`rounded-2xl border p-4 transition duration-300 hover:scale-[1.02] ${item.color}`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-bold">{item.day}</h3>
+                        <p className="mt-1 text-slate-200">{item.title}</p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {item.note}
+                        </p>
+                      </div>
+
+                      <p className="shrink-0 text-right text-lg font-black text-cyan-300">
+                        {item.time}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-5 text-sm text-slate-400">
+                ※スケジュールは変更になる場合があります。最新情報はXをご確認ください。
+              </p>
             </section>
 
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
@@ -330,6 +403,7 @@ export default function Home() {
                         className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
                       />
                     </a>
+
                     <a
                       href={latest.latestShort.url}
                       target="_blank"
