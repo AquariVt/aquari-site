@@ -28,9 +28,9 @@ const weeklySchedule: ScheduleItem[] = [
   {
     day: "月曜日",
     time: "19:00〜",
-    title: "Escape from Tarkov",
+    title: "Apex Legends",
     note: "参加型配信",
-    color: "border-blue-900/40 bg-blue-950/40",
+    color: "border-red-400/30 bg-red-500/15",
   },
 {
     day: "火曜日",
@@ -41,10 +41,10 @@ const weeklySchedule: ScheduleItem[] = [
   },
   {
     day: "水曜日",
-    time: "20:00〜",
-    title: "Among Us",
-    note: "コラボ配信",
-   color: "border-blue-400/40 bg-blue-500/20",
+    time: "19:00〜",
+    title: "Escape from Tarkov",
+    note: "参加型配信",
+    color: "border-blue-900/40 bg-blue-950/40",
   },
 {
     day: "木曜日",
@@ -63,16 +63,16 @@ const weeklySchedule: ScheduleItem[] = [
 {
     day: "土曜日",
     time: "21:00〜",
-    title: "ASCEND WITHOUT LIMIT杯(Apex Legends)",
+    title: "鉄壁カスタム(Apex Legends)",
     note: "大会配信",
     color: "border-red-400/30 bg-red-500/15",
   },
   {
     day: "日曜日",
-    time: "未定",
-    title: "調整中",
-    note: "予定変更あり",
-    color: "border-slate-400/30 bg-slate-500/15",
+    time: "19:00〜",
+    title: "Escape from Tarkov",
+    note: "参加型配信",
+    color: "border-blue-900/40 bg-blue-950/40",
   },
 ];
 
