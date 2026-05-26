@@ -152,6 +152,7 @@ export default function Home() {
           <div className="space-y-8">
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">タグ一覧</h2>
+
               <div className="space-y-3 text-slate-200">
                 <p>
                   配信（切り抜きも）：
@@ -164,6 +165,7 @@ export default function Home() {
                     #Aquari配信
                   </a>
                 </p>
+
                 <p>
                   エゴサ：
                   <a
@@ -175,6 +177,7 @@ export default function Home() {
                     #アクエリ水族館
                   </a>
                 </p>
+
                 <p>
                   ファンアート：
                   <a
@@ -186,6 +189,7 @@ export default function Home() {
                     #アクエリアート
                   </a>
                 </p>
+
                 <p>
                   R18FA用：
                   <a
@@ -202,17 +206,48 @@ export default function Home() {
 
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">SNS / Channel</h2>
+
               <div className="grid gap-3">
-                <a href="https://x.com/Aquari_Vt" target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-sky-500 px-4 py-3 text-center font-bold transition hover:bg-sky-600">
+                <a
+                  href="https://x.com/Aquari_Vt"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl bg-sky-500 px-4 py-3 text-center font-bold transition hover:bg-sky-600"
+                >
                   X
                 </a>
-                <a href="https://www.youtube.com/channel/UCBvSY3MYEkkJ194_Zdjp2Jw" target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-red-500 px-4 py-3 text-center font-bold transition hover:bg-red-600">
+
+                <a
+                  href="https://www.youtube.com/channel/UCBvSY3MYEkkJ194_Zdjp2Jw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl bg-red-500 px-4 py-3 text-center font-bold transition hover:bg-red-600"
+                >
                   YouTube
                 </a>
-                <a href="https://www.twitch.tv/aquarivt" target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-purple-600 px-4 py-3 text-center font-bold transition hover:bg-purple-700">
+
+                <a
+                  href="https://www.twitch.tv/aquarivt"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl bg-purple-600 px-4 py-3 text-center font-bold transition hover:bg-purple-700"
+                >
                   Twitch
                 </a>
-                <a href="https://x.com/AtelierDia" target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-slate-700 px-4 py-3 text-center font-bold leading-6 transition hover:bg-slate-600">
+
+                <a
+                  href="/achievements"
+                  className="rounded-2xl bg-amber-500 px-4 py-3 text-center font-bold transition hover:bg-amber-600"
+                >
+                  大会実績
+                </a>
+
+                <a
+                  href="https://x.com/AtelierDia"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl bg-slate-700 px-4 py-3 text-center font-bold leading-6 transition hover:bg-slate-600"
+                >
                   イラスト制作・Live2D制作者様
                   <br />
                   DIAさん
@@ -242,6 +277,7 @@ export default function Home() {
                           {item.note}
                         </p>
                       </div>
+
                       <p className="shrink-0 text-right text-lg font-black text-sky-200">
                         {item.time}
                       </p>
@@ -257,10 +293,26 @@ export default function Home() {
 
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">固定動画</h2>
-              <a href={fixedVideoUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-2xl border border-white/10">
-                <img src={fixedThumbnail} alt="Aquari 固定動画" className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]" />
+
+              <a
+                href={fixedVideoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-2xl border border-white/10"
+              >
+                <img
+                  src={fixedThumbnail}
+                  alt="Aquari 固定動画"
+                  className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+                />
               </a>
-              <a href={fixedVideoUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex rounded-2xl bg-red-500 px-4 py-3 font-bold transition hover:bg-red-600">
+
+              <a
+                href={fixedVideoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex rounded-2xl bg-red-500 px-4 py-3 font-bold transition hover:bg-red-600"
+              >
                 YouTubeで見る
               </a>
             </section>
@@ -268,6 +320,7 @@ export default function Home() {
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold">おすすめPlaylist</h2>
+
                 <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs text-red-200">
                   YouTube
                 </span>
@@ -283,7 +336,12 @@ export default function Home() {
                 />
               </div>
 
-              <a href={playlistUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex rounded-2xl bg-red-500 px-4 py-3 font-bold transition hover:bg-red-600">
+              <a
+                href={playlistUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex rounded-2xl bg-red-500 px-4 py-3 font-bold transition hover:bg-red-600"
+              >
                 Playlistを開く
               </a>
             </section>
@@ -292,13 +350,22 @@ export default function Home() {
           <div className="space-y-8">
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-6 text-2xl font-bold">ビジュアル</h2>
+
               <div className="grid gap-8 xl:grid-cols-2">
                 <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                   <h3 className="mb-4 text-lg font-semibold text-cyan-100">
                     バニー衣装
                   </h3>
+
                   <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                    <Image src="/aquari-full.png" alt="Aquari バニー衣装ビジュアル" width={1200} height={1200} className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]" priority />
+                    <Image
+                      src="/aquari-full.png"
+                      alt="Aquari バニー衣装ビジュアル"
+                      width={1200}
+                      height={1200}
+                      className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+                      priority
+                    />
                   </div>
                 </div>
 
@@ -306,8 +373,16 @@ export default function Home() {
                   <h3 className="mb-4 text-lg font-semibold text-cyan-100">
                     巫女衣装
                   </h3>
+
                   <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                    <Image src="/aquari-shrine.png" alt="Aquari 巫女衣装ビジュアル" width={1200} height={1200} className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]" priority />
+                    <Image
+                      src="/aquari-shrine.png"
+                      alt="Aquari 巫女衣装ビジュアル"
+                      width={1200}
+                      height={1200}
+                      className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+                      priority
+                    />
                   </div>
                 </div>
               </div>
@@ -334,11 +409,25 @@ export default function Home() {
                   </div>
                 ) : youtubeDisplay ? (
                   <div className="space-y-4">
-                    <a href={youtubeDisplay.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-2xl border border-white/10">
-                      <img src={`https://img.youtube.com/vi/${youtubeDisplay.id}/hqdefault.jpg`} alt={youtubeDisplay.title} className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]" />
+                    <a
+                      href={youtubeDisplay.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block overflow-hidden rounded-2xl border border-white/10"
+                    >
+                      <img
+                        src={`https://img.youtube.com/vi/${youtubeDisplay.id}/hqdefault.jpg`}
+                        alt={youtubeDisplay.title}
+                        className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+                      />
                     </a>
 
-                    <a href={youtubeDisplay.url} target="_blank" rel="noopener noreferrer" className="block text-sky-300 underline underline-offset-4 hover:text-sky-200">
+                    <a
+                      href={youtubeDisplay.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-sky-300 underline underline-offset-4 hover:text-sky-200"
+                    >
                       {youtubeDisplay.title}
                     </a>
 
@@ -364,11 +453,25 @@ export default function Home() {
                   </div>
                 ) : latest.latestShort ? (
                   <div className="space-y-4">
-                    <a href={latest.latestShort.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-2xl border border-white/10">
-                      <img src={`https://img.youtube.com/vi/${latest.latestShort.id}/hqdefault.jpg`} alt={latest.latestShort.title} className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]" />
+                    <a
+                      href={latest.latestShort.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block overflow-hidden rounded-2xl border border-white/10"
+                    >
+                      <img
+                        src={`https://img.youtube.com/vi/${latest.latestShort.id}/hqdefault.jpg`}
+                        alt={latest.latestShort.title}
+                        className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
+                      />
                     </a>
 
-                    <a href={latest.latestShort.url} target="_blank" rel="noopener noreferrer" className="block text-sky-300 underline underline-offset-4 hover:text-sky-200">
+                    <a
+                      href={latest.latestShort.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-sky-300 underline underline-offset-4 hover:text-sky-200"
+                    >
                       {latest.latestShort.title}
                     </a>
                   </div>
@@ -384,7 +487,12 @@ export default function Home() {
               <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
 
               {twitchSrc ? (
-                <iframe src={twitchSrc} title="Aquari Twitch Live" className="h-[360px] w-full rounded-2xl border border-white/10" allowFullScreen />
+                <iframe
+                  src={twitchSrc}
+                  title="Aquari Twitch Live"
+                  className="h-[360px] w-full rounded-2xl border border-white/10"
+                  allowFullScreen
+                />
               ) : (
                 <div className="flex h-[360px] items-center justify-center rounded-2xl bg-black/30 text-slate-300">
                   読み込み中...
@@ -394,8 +502,9 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="mt-10 text-center text-slate-400">© Aquari</footer>
+        <footer className="mt-10 text-center text-slate-400">
+          © Aquari
+        </footer>
       </div>
-    </main>
-  );
+    </main>  );
 }
