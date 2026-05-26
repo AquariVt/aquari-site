@@ -11,7 +11,7 @@ type Achievement = {
 
 const achievements: Achievement[] = [
   {
-    date: "2026年",
+    date: "2026年5月24日",
     tournament: "AREND CUP",
     result: "総合3位",
     game: "Apex Legends",
