@@ -27,16 +27,16 @@ type ScheduleItem = {
 const weeklySchedule: ScheduleItem[] = [
   {
     day: "月曜日",
-    time: "19:00〜",
-    title: "Apex Legends",
-    note: "参加型配信",
+    time: "なし",
+    title: "",
+    note: "",
     color: "border-red-400/30 bg-red-500/15",
   },
 {
     day: "火曜日",
-    time: "19:00〜",
-    title: "Escape from Tarkov",
-    note: "参加型配信",
+    time: "なし",
+    title: "",
+    note: "",
     color: "border-blue-900/40 bg-blue-950/40",
   },
   {
@@ -63,16 +63,16 @@ const weeklySchedule: ScheduleItem[] = [
 {
     day: "土曜日",
     time: "21:00〜",
-    title: "鉄壁カスタム(Apex Legends)",
+    title: "JKP杯(Apex Legends)",
     note: "大会配信",
     color: "border-red-400/30 bg-red-500/15",
   },
   {
     day: "日曜日",
-    time: "19:00〜",
-    title: "Escape from Tarkov",
-    note: "参加型配信",
-    color: "border-blue-900/40 bg-blue-950/40",
+    time: "21:00〜",
+    title: "初恋カスタム(Apex Legends)",
+    note: "大会配信",
+    color: "border-red-400/30 bg-red-500/15",
   },
 ];
 
