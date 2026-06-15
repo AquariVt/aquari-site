@@ -44,7 +44,7 @@ const weeklySchedule: ScheduleItem[] = [
     time: "19:00〜",
     title: "Rainbow Six Siege",
     note: "参加型配信",
-    color: "border-sky-400/40 bg-sky-500/20",
+    color: "border-red-400/30 bg-red-500/15",
   },
 {
     day: "木曜日",
@@ -58,7 +58,7 @@ const weeklySchedule: ScheduleItem[] = [
     time: "19:00〜",
     title: "Escape from Tarkov",
     note: "参加型配信",
-    color: "border-red-400/30 bg-red-500/15",
+    color: "border-sky-400/40 bg-sky-500/20",
   },
 {
     day: "土曜日",
@@ -72,7 +72,7 @@ const weeklySchedule: ScheduleItem[] = [
     time: "13:00〜",
     title: "Apex Legends",
     note: "参加型配信",
-    color: "border-sky-400/40 bg-sky-500/20",
+    color: "border-red-400/30 bg-red-500/15",
   },
 ];
 
