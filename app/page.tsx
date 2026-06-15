@@ -37,21 +37,21 @@ const weeklySchedule: ScheduleItem[] = [
     time: "19:00〜",
     title: "Escape from Tarkov",
     note: "参加型配信",
-    color: "border-blue-900/40 bg-blue-950/40",
+    color: "border-sky-400/40 bg-sky-500/20",
   },
   {
     day: "水曜日",
     time: "19:00〜",
     title: "Rainbow Six Siege",
     note: "参加型配信",
-    color: "border-blue-900/40 bg-blue-950/40",
+    color: "border-sky-400/40 bg-sky-500/20",
   },
 {
     day: "木曜日",
     time: "19:00〜",
     title: "Escape from Tarkov",
     note: "参加型配信",
-    color: "border-blue-900/40 bg-blue-950/40",
+    color: "border-sky-400/40 bg-sky-500/20",
   },
   {
     day: "金曜日",
@@ -65,14 +65,14 @@ const weeklySchedule: ScheduleItem[] = [
     time: "13:00〜",
     title: "Rainbow Six Siege",
     note: "参加型配信",
-    color: "border-blue-900/40 bg-blue-950/40",,
+    color: "border-sky-400/40 bg-sky-500/20",
   },
   {
     day: "日曜日",
     time: "13:00〜",
     title: "Apex Legends",
     note: "参加型配信",
-    color: "border-blue-900/40 bg-blue-950/40",
+    color: "border-sky-400/40 bg-sky-500/20",
   },
 ];
 
