@@ -49,7 +49,7 @@ const weeklySchedule: ScheduleItem[] = [
 {
     day: "木曜日",
     time: "17:00〜",
-    title: "Escape from Tarkov",
+    title: "Apex Legends",
     note: "参加型配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
@@ -63,14 +63,14 @@ const weeklySchedule: ScheduleItem[] = [
 {
     day: "土曜日",
     time: "13:00〜",
-    title: "Rainbow Six Siege",
-    note: "参加型配信",
+    title: "しらたま誕生祭カスタム(Apex)",
+    note: "大会配信",
     color: "border-red-400/30 bg-red-500/15",
   },
   {
     day: "日曜日",
     time: "13:00〜",
-    title: "Apex Legends",
+    title: "Escape from Tarkov",
     note: "参加型配信",
     color: "border-red-400/30 bg-red-500/15",
   },
