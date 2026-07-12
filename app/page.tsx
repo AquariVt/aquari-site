@@ -28,7 +28,7 @@ const weeklySchedule: ScheduleItem[] = [
   {
     day: "月曜日",
     time: "17:00～",
-    title: "Rainbow Six Siege",
+    title: "Apex Legends",
     note: "参加型配信",
     color: "border-red-400/30 bg-red-500/15",
   },
@@ -55,22 +55,22 @@ const weeklySchedule: ScheduleItem[] = [
   },
   {
     day: "金曜日",
-    time: "00:00〜",
-    title: "配信なし",
-    note: "Animelo Summer Live参戦の為",
+    time: "16:00〜",
+    title: "ドライブ配信",
+    note: "",
     color: "border-sky-400/40 bg-sky-500/20",
   },
 {
     day: "土曜日",
     time: "00:00〜",
     title: "配信なし",
-    note: "Animelo Summer Live参戦の為",
+    note: "帰省してるため",
     color: "border-sky-400/40 bg-sky-500/20",  },
   {
     day: "日曜日",
-    time: "00:00〜",
-    title: "配信なし",
-    note: "Animelo Summer Live参戦の為",
+    time: "17:00〜",
+    title: "Apex Legends",
+    note: "参加型配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
 ];
