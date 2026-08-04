@@ -55,22 +55,22 @@ const weeklySchedule: ScheduleItem[] = [
   },
   {
     day: "金曜日",
-    time: "22:00〜",
-    title: "Apex Legends",
-    note: "藤川なつお誕生日-CUSTOM-",
+    time: "24:00〜",
+    title: "ドライブ配信",
+    note: "静岡迄の深夜ドライブ",
     color: "border-sky-400/40 bg-sky-500/20",
   },
 {
     day: "土曜日",
-    time: "17:00〜",
-    title: "Escape from Tarkov",
-    note: "参加型配信",
+    time: "13:00〜",
+    title: "豊田までのドライブ配信!!
+    note: "ドライブ配信",
     color: "border-sky-400/40 bg-sky-500/20",  },
   {
     day: "日曜日",
     time: "13:00〜",
-    title: "Rainbow Six Siege",
-    note: "参加型配信",
+    title: "千葉に戻るドライブ配信",
+    note: "ドライブ配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
 ];
