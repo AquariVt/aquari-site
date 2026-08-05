@@ -24,7 +24,8 @@ type ScheduleItem = {
   color: string;
 };
 
-const weeklySchedule: ScheduleItem[] = [
+const weeklySchedule
+: ScheduleItem[] = [
   {
     day: "月曜日",
     time: "17:00～",
