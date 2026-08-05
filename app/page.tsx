@@ -64,7 +64,7 @@ const weeklySchedule
 {
     day: "土曜日",
     time: "13:00〜",
-    title: "豊田スタジアムまでのドライブ配信!!,
+    title: "豊田スタジアムまでのドライブ配信!!",
     note: "ドライブ配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
