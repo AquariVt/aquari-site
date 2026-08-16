@@ -28,15 +28,15 @@ const weeklySchedule
 : ScheduleItem[] = [
   {
     day: "月曜日",
-    time: "17:00～",
-    title: "Rainbow Six Siege",
+    time: "帰宅次第～",
+    title: "Escape from Tarkov",
     note: "参加型配信",
     color: "border-red-400/30 bg-red-500/15",
   },
 {
     day: "火曜日",
-    time: "17:00〜",
-    title: "Rainbow Six Siege",
+    time: "16:00〜",
+    title: "Apex
     note: "参加型配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
@@ -50,29 +50,29 @@ const weeklySchedule
 {
     day: "木曜日",
     time: "17:00〜",
-    title: "Escape from Tarkov",
+    title: "R6S",
     note: "参加型配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
   {
     day: "金曜日",
-    time: "24:00〜",
-    title: "ドライブ配信",
-    note: "静岡迄の深夜ドライブ",
+    time: "1600〜",
+    title: "Apex",
+    note: "参加型配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
 {
     day: "土曜日",
     time: "13:00〜",
-    title: "豊田スタジアムまでのドライブ配信!!",
+    title: "R6S",
     note: "ドライブ配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
   {
     day: "日曜日",
     time: "13:00〜",
-    title: "千葉に戻るドライブ配信",
-    note: "ドライブ配信",
+    title: "Escape from Tarkov",
+    note: "参加型配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
 ];
