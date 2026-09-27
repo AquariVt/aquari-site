@@ -65,7 +65,7 @@ const weeklySchedule
     day: "土曜日",
     time: "14:00〜",
     title: "Raibow Six Siege",
-    note: "参加型配信"",
+    note: "参加型配信",
     color: "border-sky-400/40 bg-sky-500/20",
   },
   {
