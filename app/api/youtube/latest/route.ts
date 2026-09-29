@@ -108,11 +108,9 @@ async function youtubeFetch(
 
 export async function GET() {
   try {
-    /*
-     * ==========================
-     * 現在配信中の動画
-     * ==========================
-     */
+    // =========================
+    // 現在のYouTubeライブ
+    // =========================
 
     const liveResponse = await youtubeFetch("search", {
       part: "snippet",
@@ -126,24 +124,18 @@ export async function GET() {
       | SearchItem
       | undefined;
 
-    const currentLive =
-      liveItem?.id?.videoId
-        ? {
-            id: liveItem.id.videoId,
-            title:
-              liveItem.snippet?.title || "YouTube配信中",
-            thumbnail: pickThumbnail(
-              liveItem.snippet?.thumbnails
-            ),
-            url: `https://www.youtube.com/watch?v=${liveItem.id.videoId}`,
-          }
-        : null;
+    const currentLive = liveItem?.id?.videoId
+      ? {
+          id: liveItem.id.videoId,
+          title: liveItem.snippet?.title || "YouTube配信中",
+          thumbnail: pickThumbnail(liveItem.snippet?.thumbnails),
+          url: `https://www.youtube.com/watch?v=${liveItem.id.videoId}`,
+        }
+      : null;
 
-    /*
-     * ==========================
-     * 最新配信アーカイブ
-     * ==========================
-     */
+    // =========================
+    // 最新ライブアーカイブ
+    // =========================
 
     const archiveResponse = await youtubeFetch("search", {
       part: "snippet",
@@ -158,144 +150,138 @@ export async function GET() {
       | SearchItem
       | undefined;
 
-    const latestArchive =
-      archiveItem?.id?.videoId
-        ? {
-            id: archiveItem.id.videoId,
-            title:
-              archiveItem.snippet?.title ||
-              "最新アーカイブ",
-            thumbnail: pickThumbnail(
-              archiveItem.snippet?.thumbnails
-            ),
-            url: `https://www.youtube.com/watch?v=${archiveItem.id.videoId}`,
-          }
-        : null;
+    const latestArchive = archiveItem?.id?.videoId
+      ? {
+          id: archiveItem.id.videoId,
+          title: archiveItem.snippet?.title || "最新アーカイブ",
+          thumbnail: pickThumbnail(archiveItem.snippet?.thumbnails),
+          url: `https://www.youtube.com/watch?v=${archiveItem.id.videoId}`,
+        }
+      : null;
 
-    /*
-     * ==========================
-     * 最新Shortを取得
-     * ==========================
-     *
-     * #shorts検索ではなく、
-     * 最新アップロードから探します。
-     */
+    // =========================
+    // 最新Short
+    // =========================
 
+    let latestShort: {
+      id: string;
+      title: string;
+      thumbnail: string;
+      url: string;
+    } | null = null;
+
+    // チャンネルのアップロードプレイリストを取得
     const channelResponse = await youtubeFetch("channels", {
       part: "contentDetails",
       id: CHANNEL_ID,
     });
 
     const uploadsPlaylistId =
-      channelResponse.items?.[0]?.contentDetails
-        ?.relatedPlaylists?.uploads;
-
-    let latestShort = null;
+      channelResponse.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
 
     if (uploadsPlaylistId) {
-      const uploadsResponse = await youtubeFetch(
-        "playlistItems",
-        {
-          part: "snippet",
-          playlistId: uploadsPlaylistId,
-          maxResults: "20",
-        }
-      );
+      // 最新50件まで確認
+      const uploadsResponse = await youtubeFetch("playlistItems", {
+        part: "snippet",
+        playlistId: uploadsPlaylistId,
+        maxResults: "50",
+      });
 
-      const uploads = (uploadsResponse.items ||
-        []) as PlaylistItem[];
+      const uploads = (uploadsResponse.items || []) as PlaylistItem[];
 
       const ids = uploads
-        .map(
-          (item) =>
-            item.snippet?.resourceId?.videoId
-        )
+        .map((item) => item.snippet?.resourceId?.videoId)
         .filter((id): id is string => Boolean(id));
 
       if (ids.length > 0) {
-        const videosResponse = await youtubeFetch(
-          "videos",
-          {
-            part: "snippet,contentDetails",
-            id: ids.join(","),
-          }
-        );
+        const videosResponse = await youtubeFetch("videos", {
+          part: "snippet,contentDetails",
+          id: ids.join(","),
+        });
 
-        const videos = (videosResponse.items ||
-          []) as VideoItem[];
-
-        /*
-         * playlistItems と同じ新着順に並べ直す
-         */
+        const videos = (videosResponse.items || []) as VideoItem[];
 
         const videoMap = new Map(
-          videos.map((video) => [
-            video.id,
-            video,
-          ])
+          videos.map((video) => [video.id, video])
         );
 
+        // アップロード順を維持
         const orderedVideos = ids
           .map((id) => videoMap.get(id))
           .filter(
-            (video): video is VideoItem =>
-              Boolean(video)
+            (video): video is VideoItem => Boolean(video)
           );
 
-        const short = orderedVideos.find(
-          (video) => {
-            const title =
-              video.snippet?.title?.toLowerCase() ||
-              "";
+        const shortVideo = orderedVideos.find((video) => {
+          const title =
+            video.snippet?.title?.toLowerCase() || "";
 
-            const description =
-              video.snippet?.description?.toLowerCase() ||
-              "";
+          const description =
+            video.snippet?.description?.toLowerCase() || "";
 
-            const seconds = durationToSeconds(
-              video.contentDetails?.duration
-            );
+          const seconds = durationToSeconds(
+            video.contentDetails?.duration
+          );
 
-            /*
-             * 配信中動画は除外
-             */
-            const isLive =
-              video.snippet?.liveBroadcastContent ===
-                "live" ||
-              video.snippet?.liveBroadcastContent ===
-                "upcoming";
+          const liveState =
+            video.snippet?.liveBroadcastContent;
 
-            if (isLive) {
-              return false;
-            }
-
-            /*
-             * Short候補
-             *
-             * ・#shorts がある
-             * または
-             * ・3分以内
-             */
-            return (
-              title.includes("#shorts") ||
-              description.includes("#shorts") ||
-              seconds <= 180
-            );
+          // ライブ・配信予定はShort判定から除外
+          if (liveState === "live" || liveState === "upcoming") {
+            return false;
           }
-        );
 
-        if (short) {
+          return (
+            title.includes("#shorts") ||
+            description.includes("#shorts") ||
+            seconds <= 180
+          );
+        });
+
+        if (shortVideo) {
           latestShort = {
-            id: short.id,
+            id: shortVideo.id,
             title:
-              short.snippet?.title ||
+              shortVideo.snippet?.title ||
               "最新Short動画",
             thumbnail: pickThumbnail(
-              short.snippet?.thumbnails
+              shortVideo.snippet?.thumbnails
             ),
-            url: `https://www.youtube.com/shorts/${short.id}`,
+            url: `https://www.youtube.com/shorts/${shortVideo.id}`,
           };
         }
+      }
+    }
+
+    // =========================
+    // Shortが見つからない場合の予備検索
+    // =========================
+
+    if (!latestShort) {
+      const shortSearchResponse = await youtubeFetch("search", {
+        part: "snippet",
+        channelId: CHANNEL_ID,
+        q: "#shorts",
+        type: "video",
+        order: "date",
+        maxResults: "10",
+      });
+
+      const shortSearchItem = (
+        shortSearchResponse.items || []
+      )[0] as SearchItem | undefined;
+
+      if (shortSearchItem?.id?.videoId) {
+        latestShort = {
+          id: shortSearchItem.id.videoId,
+          title:
+            shortSearchItem.snippet?.title ||
+            "最新Short動画",
+          thumbnail: pickThumbnail(
+            shortSearchItem.snippet?.thumbnails
+          ),
+          url: `https://www.youtube.com/shorts/${shortSearchItem.id.videoId}`,
+        };
       }
     }
 
@@ -305,10 +291,7 @@ export async function GET() {
       latestShort,
     });
   } catch (error) {
-    console.error(
-      "YouTube API取得エラー:",
-      error
-    );
+    console.error("YouTube API取得エラー:", error);
 
     return NextResponse.json(
       {
