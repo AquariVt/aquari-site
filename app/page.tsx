@@ -56,16 +56,16 @@ const weeklySchedule
   },
   {
     day: "金曜日",
-    time: "14:00〜",
-    title: "Escape from tarkov",
-    note: "参加型配信",
+    time: "",
+    title: "配信お休み",
+    note: "",
     color: "border-sky-400/40 bg-sky-500/20",
   },
 {
     day: "土曜日",
-    time: "14:00〜",
-    title: "Raibow Six Siege",
-    note: "参加型配信",
+    time: "",
+    title: "配信お休み!!!",
+    note: "",
     color: "border-sky-400/40 bg-sky-500/20",
   },
   {
