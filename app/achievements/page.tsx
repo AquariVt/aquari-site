@@ -1,4 +1,16 @@
 import Link from "next/link";
+import Image from "next/image";
+import type { Metadata } from "next";
+
+const title = "大会実績｜Aquari 公式サイト";
+const description = "九尾系Vtuber・Aquariの大会参加実績と成績。Apex Legends・AREND CUPの大会結果を掲載しています。";
+
+export const metadata: Metadata = {
+  title, description,
+  alternates: { canonical: "/achievements" },
+  openGraph: { title, description, url: "/achievements", siteName: "Aquari Official Site", locale: "ja_JP", type: "website" },
+  twitter: { card: "summary_large_image", title, description, creator: "@Aquari_Vt", images: ["/opengraph-image"] },
+};
 
 type Achievement = {
   date: string;
@@ -75,16 +87,19 @@ export default function AchievementsPage() {
 
               {item.image && (
                 <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-xl">
-                  <img
+                  <Image
                     src={item.image}
                     alt={`${item.tournament} 大会結果`}
-                    className="w-full object-cover"
+                    width={1174} height={617}
+                    sizes="(min-width: 1152px) 1038px, calc(100vw - 90px)"
+                    className="h-auto w-full object-contain"
                   />
                 </div>
               )}
             </article>
           ))}
         </section>
+        <footer className="mt-10 text-center text-slate-400">© Aquari</footer>
       </div>
     </main>
   );
