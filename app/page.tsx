@@ -96,11 +96,15 @@ function mergeLatest(previous: LatestResponse, incoming: LatestResponse): Latest
 }
 
 function VideoThumbnail({ video }: { video: VideoItem }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <div className="flex aspect-video items-center justify-center bg-black/30 text-sky-200">YouTubeで見る ↗</div>;
-  return <img src={video.thumbnail} alt={video.title} width={480} height={360}
-    loading="lazy" decoding="async" onError={() => setFailed(true)}
-    className="aspect-video w-full object-cover transition duration-300 hover:scale-[1.02]" />;
+  const [attempt, setAttempt] = useState(0);
+  const sources = [...new Set([video.thumbnail, `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`])];
+  if (attempt >= sources.length) return <div className="flex aspect-video items-center justify-center bg-black/30 text-sky-200">YouTubeで見る ↗</div>;
+  return <div className="relative aspect-video w-full bg-black/30">
+    <Image key={sources[attempt]} src={sources[attempt]} alt={video.title} fill
+      sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
+      loading="lazy" decoding="async" onError={() => setAttempt((value) => value + 1)}
+      className="object-contain transition duration-300 hover:scale-[1.02]" />
+  </div>;
 }
 
 function SectionNotice({ state }: { state: SectionState }) {
