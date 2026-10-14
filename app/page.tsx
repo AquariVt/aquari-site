@@ -540,6 +540,23 @@ export default function Home() {
                     />
                   </div>
                 </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                  <h3 className="mb-4 text-lg font-semibold text-cyan-100">
+                    私服
+                  </h3>
+
+                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                    <Image
+                      src="/aquari-casual.png"
+                      alt="Aquari 私服ビジュアル"
+                      width={1699}
+                      height={2048}
+                      className="h-auto w-full object-contain transition duration-300 hover:scale-[1.02]"
+                      sizes="(min-width: 1280px) 300px, (min-width: 1024px) 600px, calc(100vw - 80px)"
+                    />
+                  </div>
+                </div>
               </div>
             </section>
 
