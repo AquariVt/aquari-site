@@ -1,43 +1,27 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
+import { durationSeconds, isLiveCandidate, isActiveLive, selectLatestUpload, type YouTubeVideo, type ShortsIndex } from "./video-utils";
 
 export const runtime = "nodejs";
 
 const CHANNEL_ID = "UCBvSY3MYEkkJ194_Zdjp2Jw";
 const API_BASE = "https://www.googleapis.com/youtube/v3";
-const CACHE_VERSION = "aquari-youtube-v2";
-const RECENT_TTL = 300;
+const CACHE_VERSION = "aquari-youtube-v3";
+const RECENT_TTL = 180;
 // Only this discovery step uses search.list. Share it across visitors.
 const LIVE_SEARCH_TTL = 1800;
-const LIVE_DETAIL_TTL = 120;
+const LIVE_DETAIL_TTL = 60;
 const SHORTS_TTL = 900;
 const MAX_STALE_SECONDS = 7 * 24 * 60 * 60;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 
-type ThumbnailSet = Record<string, { url?: string }>;
-type YouTubeVideo = {
-  id: string;
-  snippet?: {
-    channelId?: string;
-    title?: string;
-    publishedAt?: string;
-    thumbnails?: ThumbnailSet;
-    liveBroadcastContent?: string;
-  };
-  contentDetails?: { duration?: string };
-  status?: { privacyStatus?: string; embeddable?: boolean };
-  liveStreamingDetails?: {
-    actualStartTime?: string;
-    actualEndTime?: string;
-    scheduledStartTime?: string;
-  };
-};
 type VideoCard = {
   id: string;
   title: string;
   thumbnail: string;
   url: string;
   embeddable: boolean;
+  publishedAt: string | null;
 };
 type Snapshot<T> = { value: T; checkedAt: string };
 type Section = {
@@ -91,14 +75,6 @@ function safeLog(feature: string, error: unknown) {
   console.error(`[YouTube:${feature}]`, error instanceof YouTubeError ? error.code : "unavailable");
 }
 
-function durationSeconds(duration?: string): number | null {
-  if (!duration) return null;
-  const match = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/.exec(duration);
-  if (!match || !match.slice(1).some((part) => part !== undefined)) return null;
-  return Number(match[1] || 0) * 86400 + Number(match[2] || 0) * 3600
-    + Number(match[3] || 0) * 60 + Number(match[4] || 0);
-}
-
 function isPublicChannelVideo(video: YouTubeVideo) {
   return VIDEO_ID.test(video.id) && video.snippet?.channelId === CHANNEL_ID
     && video.status?.privacyStatus === "public";
@@ -121,10 +97,11 @@ function toCard(video: YouTubeVideo, isShort = false): VideoCard {
     thumbnail,
     url: isShort ? `https://www.youtube.com/shorts/${video.id}` : `https://www.youtube.com/watch?v=${video.id}`,
     embeddable: video.status?.embeddable === true,
+    publishedAt: video.snippet?.publishedAt || null,
   };
 }
 
-async function playlistVideoIds(playlistId: string, maxPages: number): Promise<string[]> {
+async function playlistVideoIds(playlistId: string, maxPages: number): Promise<{ ids: string[]; complete: boolean }> {
   const ids: string[] = [];
   let pageToken = "";
   for (let page = 0; page < maxPages; page++) {
@@ -138,7 +115,7 @@ async function playlistVideoIds(playlistId: string, maxPages: number): Promise<s
     pageToken = data.nextPageToken || "";
     if (!pageToken) break;
   }
-  return [...new Set(ids)];
+  return { ids: [...new Set(ids)], complete: !pageToken };
 }
 
 async function videoDetails(ids: string[]): Promise<YouTubeVideo[]> {
@@ -161,7 +138,7 @@ const uploadsPlaylist = unstable_cache(async () => {
 
 const recentVideos = unstable_cache(async () => {
   const playlistId = await uploadsPlaylist();
-  const ids = await playlistVideoIds(playlistId, 2);
+  const { ids } = await playlistVideoIds(playlistId, 2);
   return snapshot(await videoDetails(ids));
 }, [CACHE_VERSION, CHANNEL_ID, "recent"], { revalidate: RECENT_TTL });
 
@@ -180,9 +157,9 @@ const liveDetails = unstable_cache(async (ids: string[]) => snapshot(await video
 
 const shortsFromPlaylist = unstable_cache(async (playlistId: string) => {
   if (!/^[A-Za-z0-9_-]{10,100}$/.test(playlistId)) throw new YouTubeError("shorts_configuration");
-  // This must be an owner-curated Shorts-only public playlist. Hashtags and
-  // thumbnail dimensions are intentionally NOT used as proof of Shorts status.
-  const ids = await playlistVideoIds(playlistId, 5);
+  // A Shorts-only playlist (including the channel-generated Shorts playlist).
+  // Hashtags, duration alone and thumbnail dimensions do not prove Shorts status.
+  const { ids, complete } = await playlistVideoIds(playlistId, 5);
   const videos = await videoDetails(ids);
   const candidates = videos.filter((video) => {
     const seconds = durationSeconds(video.contentDetails?.duration);
@@ -192,7 +169,7 @@ const shortsFromPlaylist = unstable_cache(async (playlistId: string) => {
       && !video.liveStreamingDetails?.scheduledStartTime
       && !video.liveStreamingDetails?.actualEndTime;
   }).sort((a, b) => Date.parse(b.snippet?.publishedAt || "") - Date.parse(a.snippet?.publishedAt || ""));
-  return snapshot(candidates[0] ? toCard(candidates[0], true) : null);
+  return snapshot({ ids, complete, latest: candidates[0] ? toCard(candidates[0], true) : null });
 }, [CACHE_VERSION, CHANNEL_ID, "shorts"], { revalidate: SHORTS_TTL });
 
 function resolveSnapshot<T>(data: Snapshot<T>, freshSeconds: number, empty: T): { value: T; section: Section } {
@@ -205,8 +182,7 @@ function resolveSnapshot<T>(data: Snapshot<T>, freshSeconds: number, empty: T): 
 
 async function loadLive(recent: Promise<Snapshot<YouTubeVideo[]>>): Promise<{ value: VideoCard | null; section: Section }> {
   const [index, discovery] = await Promise.allSettled([recent, discoverLive()]);
-  const recentLive = index.status === "fulfilled" ? index.value.value.filter((video) =>
-    video.snippet?.liveBroadcastContent === "live" && !video.liveStreamingDetails?.actualEndTime) : [];
+  const recentLive = index.status === "fulfilled" ? index.value.value.filter(isLiveCandidate) : [];
   const ids = [...new Set([
     ...recentLive.map((video) => video.id),
     ...(discovery.status === "fulfilled" ? discovery.value.value : []),
@@ -216,8 +192,7 @@ async function loadLive(recent: Promise<Snapshot<YouTubeVideo[]>>): Promise<{ va
     if (Date.now() - Date.parse(details.checkedAt) > LIVE_DETAIL_TTL * 2 * 1000) {
       throw new YouTubeError("live_status_stale");
     }
-    const active = details.value.filter((video) => video.snippet?.liveBroadcastContent === "live"
-      && !video.liveStreamingDetails?.actualEndTime)
+    const active = details.value.filter(isActiveLive)
       .sort((a, b) => Date.parse(b.liveStreamingDetails?.actualStartTime || b.snippet?.publishedAt || "")
         - Date.parse(a.liveStreamingDetails?.actualStartTime || a.snippet?.publishedAt || ""))[0];
     if (active) return { value: toCard(active), section: { status: "ok", checkedAt: details.checkedAt } };
@@ -236,6 +211,15 @@ async function loadArchive(recent: Promise<Snapshot<YouTubeVideo[]>>) {
   return resolveSnapshot<VideoCard | null>({ value: video ? toCard(video) : null, checkedAt: data.checkedAt }, RECENT_TTL, null);
 }
 
+async function loadVideo(recent: Promise<Snapshot<YouTubeVideo[]>>, shorts: Promise<Snapshot<{ ids: string[]; complete: boolean; latest: VideoCard | null }>> | null) {
+  const [index, catalog] = await Promise.all([recent, shorts?.catch(() => null) ?? null]);
+  const freshCatalog: ShortsIndex | null = catalog && Date.now() - Date.parse(catalog.checkedAt) <= SHORTS_TTL * 2 * 1000
+    ? { ids: catalog.value.ids, complete: catalog.value.complete, checkedAt: catalog.checkedAt } : null;
+  const result = selectLatestUpload(index.value, freshCatalog);
+  if (result.uncertain) throw new YouTubeError("video_classification_pending");
+  return resolveSnapshot<VideoCard | null>({ value: result.video ? toCard(result.video) : null, checkedAt: index.checkedAt }, RECENT_TTL, null);
+}
+
 // Coalesce simultaneous visitors within a server instance. Next's Data Cache
 // supplies cross-request persistence; this promise is not a durable cache.
 let inFlight: Promise<{ body: object; status: number }> | null = null;
@@ -243,13 +227,15 @@ let inFlight: Promise<{ body: object; status: number }> | null = null;
 async function buildResponse() {
   const recent = recentVideos();
   const shortsId = process.env.YOUTUBE_SHORTS_PLAYLIST_ID?.trim();
+  const shorts = shortsId ? shortsFromPlaylist(shortsId) : null;
   const results = await Promise.allSettled([
     loadLive(recent),
     loadArchive(recent),
-    shortsId ? shortsFromPlaylist(shortsId).then((data) => resolveSnapshot(data, SHORTS_TTL, null))
+    shorts ? shorts.then((data) => resolveSnapshot({ value: data.value.latest, checkedAt: data.checkedAt }, SHORTS_TTL, null))
       : Promise.resolve({ value: null, section: { status: "unconfigured" as const, checkedAt: null } }),
+    loadVideo(recent, shorts),
   ]);
-  const names = ["live", "archive", "shorts"] as const;
+  const names = ["live", "archive", "shorts", "video"] as const;
   const sections = {} as Record<typeof names[number], Section>;
   const values: (VideoCard | null)[] = [];
   results.forEach((result, index) => {
@@ -268,7 +254,7 @@ async function buildResponse() {
   return {
     status: allFailed ? 503 : 200,
     body: {
-      currentLive: values[0], latestArchive: values[1], latestShort: values[2],
+      currentLive: values[0], latestArchive: values[1], latestShort: values[2], latestVideo: values[3],
       sections, checkedAt: new Date().toISOString(),
     },
   };
