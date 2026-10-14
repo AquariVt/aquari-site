@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 
 type VideoItem = {
@@ -25,6 +25,10 @@ type LatestResponse = {
 
 const CHANNEL_URL = "https://www.youtube.com/channel/UCBvSY3MYEkkJ194_Zdjp2Jw";
 const SHORTS_URL = `${CHANNEL_URL}/shorts`;
+// The hostname cannot change without navigation. Use an empty server snapshot for hydration.
+const subscribeToHostname = () => () => {};
+const getHostname = () => window.location.hostname;
+const getServerHostname = () => "";
 const emptyLatest: LatestResponse = {
   latestShort: null, latestArchive: null, currentLive: null,
   sections: {
@@ -101,7 +105,7 @@ function VideoThumbnail({ video }: { video: VideoItem }) {
   if (attempt >= sources.length) return <div className="flex aspect-video items-center justify-center bg-black/30 text-sky-200">YouTubeで見る ↗</div>;
   return <div className="relative aspect-video w-full bg-black/30">
     <Image key={sources[attempt]} src={sources[attempt]} alt={video.title} fill
-      sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
+      sizes="(min-width: 1280px) 560px, (min-width: 768px) calc(50vw - 64px), calc(100vw - 88px)"
       loading="lazy" decoding="async" onError={() => setAttempt((value) => value + 1)}
       className="object-contain transition duration-300 hover:scale-[1.02]" />
   </div>;
@@ -133,6 +137,51 @@ function YouTubeCard({ video, live = false }: { video: VideoItem; live?: boolean
   </div>;
 }
 
+const visuals = [
+  { id: "bunny", label: "バニー衣装", src: "/aquari-full.png" },
+  { id: "shrine", label: "巫女衣装", src: "/aquari-shrine.png" },
+  { id: "casual", label: "私服", src: "/aquari-casual.png" },
+];
+
+function VisualGallery() {
+  const [selected, setSelected] = useState(0);
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const visual = visuals[selected];
+
+  return <section id="visuals" className="scroll-mt-6 rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+    <h2 className="mb-5 text-2xl font-bold">ビジュアル</h2>
+    <div role="tablist" aria-label="衣装を選ぶ" className="mb-5 grid grid-cols-3 gap-2"
+      onKeyDown={(event) => {
+        let next: number;
+        if (event.key === "ArrowRight") next = (selected + 1) % visuals.length;
+        else if (event.key === "ArrowLeft") next = (selected + visuals.length - 1) % visuals.length;
+        else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = visuals.length - 1;
+        else return;
+        event.preventDefault();
+        setSelected(next);
+        tabs.current[next]?.focus();
+      }}>
+      {visuals.map((item, index) => <button key={item.id} type="button" role="tab"
+        id={`visual-tab-${item.id}`} aria-selected={selected === index} aria-controls="visual-panel"
+        tabIndex={selected === index ? 0 : -1} ref={(element) => { tabs.current[index] = element; }}
+        onClick={() => setSelected(index)}
+        className={`rounded-xl border px-2 py-3 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-300 ${selected === index ? "border-sky-300/60 bg-sky-500/25 text-sky-100" : "border-white/10 bg-black/10 text-slate-300 hover:bg-white/10"}`}>
+        {item.label}
+      </button>)}
+    </div>
+    <div id="visual-panel" role="tabpanel" aria-labelledby={`visual-tab-${visual.id}`} tabIndex={0}
+      className="rounded-2xl border border-white/10 bg-black/10 p-3 focus-visible:outline-2 focus-visible:outline-sky-300">
+      <h3 className="px-2 pt-1 text-lg font-semibold text-cyan-100">{visual.label}</h3>
+      <div className="relative mt-3 h-[420px] overflow-hidden rounded-xl bg-white/5 sm:h-[580px]">
+        <Image key={visual.id} src={visual.src} alt={`Aquari ${visual.label}ビジュアル`} fill
+          sizes="(min-width: 1280px) 580px, (min-width: 1024px) 48vw, calc(100vw - 112px)"
+          className="object-contain" />
+      </div>
+    </div>
+  </section>;
+}
+
 type ScheduleItem = {
   day: string;
   time: string;
@@ -140,6 +189,25 @@ type ScheduleItem = {
   note: string;
   color: string;
 };
+
+// Set these only when the streaming schedule is confirmed; never substitute today's date.
+// startDate is the Monday of the target week. Both dates use YYYY-MM-DD in Japan time.
+const scheduleDates: { startDate: string | null; updatedAt: string | null } = {
+  startDate: null,
+  updatedAt: null,
+};
+
+function scheduleDateLabel(value: string) {
+  return new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric" })
+    .format(new Date(`${value}T00:00:00+09:00`));
+}
+
+function scheduleWeekLabel(startDate: string | null) {
+  if (!startDate) return "対象週：未設定";
+  const end = new Date(`${startDate}T00:00:00+09:00`);
+  end.setUTCDate(end.getUTCDate() + 6);
+  return `対象週：${scheduleDateLabel(startDate)}〜${new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" }).format(end)}`;
+}
 
 const weeklySchedule: ScheduleItem[] = [
   {
@@ -194,7 +262,8 @@ const weeklySchedule: ScheduleItem[] = [
 ];
 
 export default function Home() {
-  const [twitchSrc, setTwitchSrc] = useState("");
+  const hostname = useSyncExternalStore(subscribeToHostname, getHostname, getServerHostname);
+  const twitchSrc = hostname ? `https://player.twitch.tv/?channel=aquarivt&parent=${encodeURIComponent(hostname)}&autoplay=false` : "";
   const [latest, setLatest] = useState<LatestResponse>(emptyLatest);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -212,8 +281,6 @@ export default function Home() {
     "https://www.youtube.com/embed/videoseries?list=PLNk3vHgBJiOmmxj74gSiYj5ajHAmr3oQb";
 
   useEffect(() => {
-    const host = window.location.hostname;
-    setTwitchSrc(`https://player.twitch.tv/?channel=aquarivt&parent=${encodeURIComponent(host)}&autoplay=false`);
     let disposed = false;
     let controller: AbortController | null = null;
     let lastAttempt = 0;
@@ -293,6 +360,12 @@ export default function Home() {
             旅やサッカー観戦を好み、PCゲームではFPSを中心に活動中。
           </p>
 
+          <nav aria-label="ページ内メニュー" className="mt-6 flex flex-wrap gap-3">
+            <a href="#streams" className="rounded-full bg-sky-500 px-5 py-2.5 text-sm font-bold transition hover:bg-sky-400">配信・最新動画</a>
+            <a href="#visuals" className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-bold transition hover:bg-white/10">ビジュアル</a>
+            <a href="#schedule" className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-bold transition hover:bg-white/10">配信予定</a>
+          </nav>
+
           {isLive && (
             <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-red-300/40 bg-red-500 px-4 py-2 text-sm font-bold text-white shadow-[0_0_20px_rgba(239,68,68,0.45)]">
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />
@@ -301,8 +374,114 @@ export default function Home() {
           )}
         </header>
 
-        <section className="grid gap-8 lg:grid-cols-[0.95fr_1.25fr]">
-          <div className="space-y-8">
+        <section id="streams" aria-label="配信・最新動画" className="mb-8 scroll-mt-6 space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p role="status" className="text-sm text-slate-300">
+                {requestError ? "動画情報の更新に失敗しました。時間を置いて再試行してください。" :
+                  !loading && latest.sections.live.status === "error" ? "現在の配信状況を確認できません。YouTubeでもご確認ください。" :
+                    "配信・動画情報は自動で更新されます。"}
+              </p>
+              <button type="button" onClick={refresh} disabled={refreshing}
+                className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-bold transition hover:bg-sky-400 disabled:cursor-wait disabled:opacity-50">
+                {refreshing ? "確認中…" : "更新する"}
+              </button>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2">
+              <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <h2 className="text-2xl font-bold">{isLive ? "YouTube配信中" : "最新アーカイブ"}</h2>
+                  {isLive && <span className="inline-flex items-center gap-2 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">
+                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />LIVE
+                  </span>}
+                </div>
+                {loading ? <div role="status" className="flex aspect-video items-center justify-center rounded-2xl bg-black/30 text-slate-300">読み込み中…</div> : <>
+                  <SectionNotice state={displaySection} />
+                  {youtubeDisplay ? <YouTubeCard video={youtubeDisplay} live={isLive} /> :
+                    <div className="rounded-2xl bg-black/20 p-4 text-slate-300">
+                      {displaySection.status === "error" ? "動画情報を取得できませんでした。" : "表示できるアーカイブはありません。"}
+                      <a href={`${CHANNEL_URL}/streams`} target="_blank" rel="noopener noreferrer" className="mt-3 block text-sky-300 underline">YouTubeの配信一覧を見る ↗</a>
+                    </div>}
+                </>}
+              </section>
+
+              <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+                <h2 className="mb-4 text-2xl font-bold">{latest.sections.shorts.status === "unconfigured" ? "Short動画" : "最新のShort動画"}</h2>
+                {loading ? <div role="status" className="flex aspect-video items-center justify-center rounded-2xl bg-black/30 text-slate-300">読み込み中…</div> : <>
+                  <SectionNotice state={latest.sections.shorts} />
+                  {latest.latestShort ? <YouTubeCard video={latest.latestShort} /> :
+                    <p className="rounded-2xl bg-black/20 p-4 text-slate-300">
+                      {latest.sections.shorts.status === "unconfigured" ? "Short動画はYouTubeで公開しています。" :
+                        latest.sections.shorts.status === "error" ? "Short動画の情報を取得できませんでした。" : "表示できるShort動画はありません。"}
+                    </p>}
+                  <a href={SHORTS_URL} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sky-300 underline underline-offset-4">Shorts一覧を見る ↗</a>
+                </>}
+              </section>
+            </div>
+
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+              <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
+
+              {twitchSrc ? (
+                <iframe
+                  src={twitchSrc}
+                  loading="lazy" allow="autoplay; fullscreen; picture-in-picture"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  title="Aquari Twitch Live"
+                  className="h-[360px] w-full rounded-2xl border border-white/10"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="flex h-[360px] items-center justify-center rounded-2xl bg-black/30 text-slate-300">
+                  読み込み中...
+                </div>
+              )}
+              <a href="https://www.twitch.tv/aquarivt" target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sky-300 underline underline-offset-4">再生できない場合はTwitchで見る ↗</a>
+            </section>
+        </section>
+
+        <section className="grid items-start gap-8 lg:grid-cols-2">
+            <section id="schedule" className="scroll-mt-6 rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl font-bold">配信スケジュール</h2>
+                <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs text-sky-200">
+                  {scheduleDates.startDate ? "週間予定" : "対象週未設定"}
+                </span>
+              </div>
+
+              <div className="mb-5 space-y-1 text-sm text-slate-300">
+                <p>{scheduleWeekLabel(scheduleDates.startDate)}（日本時間）</p>
+                {scheduleDates.updatedAt && <p>予定の更新日：<time dateTime={scheduleDates.updatedAt}>{scheduleDateLabel(scheduleDates.updatedAt)}</time></p>}
+                {!scheduleDates.startDate && <p>掲載中の予定は対象週を確認中です。最新の予定はXをご確認ください。</p>}
+              </div>
+              <div className="grid gap-4">
+                {weeklySchedule.map((item) => (
+                  <div
+                    key={`${item.day}-${item.time}-${item.title}`}
+                    className={`rounded-2xl border p-4 shadow-lg transition duration-300 hover:scale-[1.02] hover:bg-sky-400/20 ${item.color}`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-bold">{item.day}</h3>
+                        <p className="mt-1 text-slate-200">{item.title}</p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {item.note}
+                        </p>
+                      </div>
+
+                      <p className="shrink-0 text-right text-lg font-black text-sky-200">
+                        {item.time}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-5 text-sm text-slate-400">
+                ※スケジュールは変更になる場合があります。<a href="https://x.com/Aquari_Vt" target="_blank" rel="noopener noreferrer" className="text-sky-300 underline underline-offset-4">最新情報をXで確認 ↗</a>
+              </p>
+            </section>
+            <VisualGallery />
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">タグ一覧</h2>
 
@@ -356,7 +535,6 @@ export default function Home() {
                 </p>
               </div>
             </section>
-
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">SNS / Channel</h2>
 
@@ -407,43 +585,6 @@ export default function Home() {
                 </a>
               </div>
             </section>
-
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <div className="mb-6 flex items-center justify-between gap-3">
-                <h2 className="text-2xl font-bold">配信スケジュール</h2>
-                <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs text-sky-200">
-                  Weekly
-                </span>
-              </div>
-
-              <div className="grid gap-4">
-                {weeklySchedule.map((item) => (
-                  <div
-                    key={`${item.day}-${item.time}-${item.title}`}
-                    className={`rounded-2xl border p-4 shadow-lg transition duration-300 hover:scale-[1.02] hover:bg-sky-400/20 ${item.color}`}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <h3 className="text-lg font-bold">{item.day}</h3>
-                        <p className="mt-1 text-slate-200">{item.title}</p>
-                        <p className="mt-1 text-sm text-slate-400">
-                          {item.note}
-                        </p>
-                      </div>
-
-                      <p className="shrink-0 text-right text-lg font-black text-sky-200">
-                        {item.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <p className="mt-5 text-sm text-slate-400">
-                ※スケジュールは変更になる場合があります。最新情報はXをご確認ください。
-              </p>
-            </section>
-
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">固定動画</h2>
 
@@ -453,12 +594,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="block overflow-hidden rounded-2xl border border-white/10"
               >
-                <img
-                  src={fixedThumbnail}
-                  alt="Aquari 固定動画"
-                  width={480} height={360} loading="lazy" decoding="async"
-                  className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                />
+                <VideoThumbnail video={{ id: fixedVideoId, title: "Aquari 固定動画", thumbnail: fixedThumbnail, url: fixedVideoUrl, embeddable: true }} />
               </a>
 
               <a
@@ -470,7 +606,6 @@ export default function Home() {
                 YouTubeで見る
               </a>
             </section>
-
             <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold">おすすめPlaylist</h2>
@@ -500,130 +635,6 @@ export default function Home() {
                 Playlistを開く
               </a>
             </section>
-          </div>
-
-          <div className="space-y-8">
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-6 text-2xl font-bold">ビジュアル</h2>
-
-              <div className="grid gap-8 xl:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                  <h3 className="mb-4 text-lg font-semibold text-cyan-100">
-                    バニー衣装
-                  </h3>
-
-                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                    <Image
-                      src="/aquari-full.png"
-                      alt="Aquari バニー衣装ビジュアル"
-                      width={1200}
-                      height={1200}
-                      className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                      sizes="(min-width: 1280px) 300px, (min-width: 1024px) 600px, calc(100vw - 80px)"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                  <h3 className="mb-4 text-lg font-semibold text-cyan-100">
-                    巫女衣装
-                  </h3>
-
-                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                    <Image
-                      src="/aquari-shrine.png"
-                      alt="Aquari 巫女衣装ビジュアル"
-                      width={1200}
-                      height={1694}
-                      className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                      sizes="(min-width: 1280px) 300px, (min-width: 1024px) 600px, calc(100vw - 80px)"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                  <h3 className="mb-4 text-lg font-semibold text-cyan-100">
-                    私服
-                  </h3>
-
-                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                    <Image
-                      src="/aquari-casual.png"
-                      alt="Aquari 私服ビジュアル"
-                      width={1699}
-                      height={2048}
-                      className="h-auto w-full object-contain transition duration-300 hover:scale-[1.02]"
-                      sizes="(min-width: 1280px) 300px, (min-width: 1024px) 600px, calc(100vw - 80px)"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p role="status" className="text-sm text-slate-300">
-                {requestError ? "動画情報の更新に失敗しました。時間を置いて再試行してください。" :
-                  !loading && latest.sections.live.status === "error" ? "現在の配信状況を確認できません。YouTubeでもご確認ください。" :
-                    "配信・動画情報は自動で更新されます。"}
-              </p>
-              <button type="button" onClick={refresh} disabled={refreshing}
-                className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-bold transition hover:bg-sky-400 disabled:cursor-wait disabled:opacity-50">
-                {refreshing ? "確認中…" : "更新する"}
-              </button>
-            </div>
-
-            <div className="grid gap-8 xl:grid-cols-2">
-              <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-                <div className="mb-4 flex flex-wrap items-center gap-3">
-                  <h2 className="text-2xl font-bold">{isLive ? "YouTube配信中" : "最新アーカイブ"}</h2>
-                  {isLive && <span className="inline-flex items-center gap-2 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">
-                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />LIVE
-                  </span>}
-                </div>
-                {loading ? <div role="status" className="flex aspect-video items-center justify-center rounded-2xl bg-black/30 text-slate-300">読み込み中…</div> : <>
-                  <SectionNotice state={displaySection} />
-                  {youtubeDisplay ? <YouTubeCard video={youtubeDisplay} live={isLive} /> :
-                    <div className="rounded-2xl bg-black/20 p-4 text-slate-300">
-                      {displaySection.status === "error" ? "動画情報を取得できませんでした。" : "表示できるアーカイブはありません。"}
-                      <a href={`${CHANNEL_URL}/streams`} target="_blank" rel="noopener noreferrer" className="mt-3 block text-sky-300 underline">YouTubeの配信一覧を見る ↗</a>
-                    </div>}
-                </>}
-              </section>
-
-              <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-                <h2 className="mb-4 text-2xl font-bold">{latest.sections.shorts.status === "unconfigured" ? "Short動画" : "最新のShort動画"}</h2>
-                {loading ? <div role="status" className="flex aspect-video items-center justify-center rounded-2xl bg-black/30 text-slate-300">読み込み中…</div> : <>
-                  <SectionNotice state={latest.sections.shorts} />
-                  {latest.latestShort ? <YouTubeCard video={latest.latestShort} /> :
-                    <p className="rounded-2xl bg-black/20 p-4 text-slate-300">
-                      {latest.sections.shorts.status === "unconfigured" ? "Short動画はYouTubeで公開しています。" :
-                        latest.sections.shorts.status === "error" ? "Short動画の情報を取得できませんでした。" : "表示できるShort動画はありません。"}
-                    </p>}
-                  <a href={SHORTS_URL} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sky-300 underline underline-offset-4">Shorts一覧を見る ↗</a>
-                </>}
-              </section>
-            </div>
-
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-              <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
-
-              {twitchSrc ? (
-                <iframe
-                  src={twitchSrc}
-                  loading="lazy" allow="autoplay; fullscreen; picture-in-picture"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  title="Aquari Twitch Live"
-                  className="h-[360px] w-full rounded-2xl border border-white/10"
-                  allowFullScreen
-                />
-              ) : (
-                <div className="flex h-[360px] items-center justify-center rounded-2xl bg-black/30 text-slate-300">
-                  読み込み中...
-                </div>
-              )}
-              <a href="https://www.twitch.tv/aquarivt" target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sky-300 underline underline-offset-4">再生できない場合はTwitchで見る ↗</a>
-            </section>
-          </div>
         </section>
 
         <footer className="mt-10 text-center text-slate-400">
