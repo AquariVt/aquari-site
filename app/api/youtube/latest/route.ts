@@ -6,12 +6,13 @@ export const runtime = "nodejs";
 
 const CHANNEL_ID = "UCBvSY3MYEkkJ194_Zdjp2Jw";
 const API_BASE = "https://www.googleapis.com/youtube/v3";
-const CACHE_VERSION = "aquari-youtube-v3";
+const CACHE_VERSION = "aquari-youtube-v4";
 const RECENT_TTL = 180;
 // Only this discovery step uses search.list. Share it across visitors.
 const LIVE_SEARCH_TTL = 1800;
 const LIVE_DETAIL_TTL = 60;
 const SHORTS_TTL = 900;
+const HISTORY_TTL = 3600;
 const MAX_STALE_SECONDS = 7 * 24 * 60 * 60;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 
@@ -24,6 +25,8 @@ type VideoCard = {
   publishedAt: string | null;
 };
 type Snapshot<T> = { value: T; checkedAt: string };
+type UploadPage = { videos: YouTubeVideo[]; nextPageToken: string };
+type RecentUploads = UploadPage & { playlistId: string };
 type Section = {
   status: "ok" | "stale" | "error" | "unconfigured";
   checkedAt: string | null;
@@ -101,7 +104,7 @@ function toCard(video: YouTubeVideo, isShort = false): VideoCard {
   };
 }
 
-async function playlistVideoIds(playlistId: string, maxPages: number): Promise<{ ids: string[]; complete: boolean }> {
+async function playlistVideoIds(playlistId: string, maxPages: number): Promise<{ ids: string[]; complete: boolean; nextPageToken: string }> {
   const ids: string[] = [];
   let pageToken = "";
   for (let page = 0; page < maxPages; page++) {
@@ -115,7 +118,7 @@ async function playlistVideoIds(playlistId: string, maxPages: number): Promise<{
     pageToken = data.nextPageToken || "";
     if (!pageToken) break;
   }
-  return { ids: [...new Set(ids)], complete: !pageToken };
+  return { ids: [...new Set(ids)], complete: !pageToken, nextPageToken: pageToken };
 }
 
 async function videoDetails(ids: string[]): Promise<YouTubeVideo[]> {
@@ -138,9 +141,23 @@ const uploadsPlaylist = unstable_cache(async () => {
 
 const recentVideos = unstable_cache(async () => {
   const playlistId = await uploadsPlaylist();
-  const { ids } = await playlistVideoIds(playlistId, 2);
-  return snapshot(await videoDetails(ids));
+  const { ids, nextPageToken } = await playlistVideoIds(playlistId, 2);
+  return snapshot({ videos: await videoDetails(ids), nextPageToken, playlistId });
 }, [CACHE_VERSION, CHANNEL_ID, "recent"], { revalidate: RECENT_TTL });
+
+// Older pages are only needed when the latest normal upload has been pushed
+// out of the recent 100 entries. Cache each page so later requests can resume
+// a cold lookup cheaply instead of repeatedly spending quota on old uploads.
+const olderUploadPage = unstable_cache(async (playlistId: string, pageToken: string) => {
+  const data = await youtubeFetch<PlaylistItem>("playlistItems", {
+    part: "contentDetails", playlistId, maxResults: "50", pageToken,
+  });
+  const ids = (data.items || []).flatMap((item) => {
+    const id = item.contentDetails?.videoId;
+    return id && VIDEO_ID.test(id) ? [id] : [];
+  });
+  return snapshot({ videos: await videoDetails(ids), nextPageToken: data.nextPageToken || "" });
+}, [CACHE_VERSION, CHANNEL_ID, "upload-history"], { revalidate: HISTORY_TTL });
 
 const discoverLive = unstable_cache(async () => {
   const data = await youtubeFetch<SearchItem>("search", {
@@ -180,9 +197,9 @@ function resolveSnapshot<T>(data: Snapshot<T>, freshSeconds: number, empty: T): 
   return { value: data.value, section: { status: age > freshSeconds * 2 ? "stale" : "ok", checkedAt: data.checkedAt } };
 }
 
-async function loadLive(recent: Promise<Snapshot<YouTubeVideo[]>>): Promise<{ value: VideoCard | null; section: Section }> {
+async function loadLive(recent: Promise<Snapshot<RecentUploads>>): Promise<{ value: VideoCard | null; section: Section }> {
   const [index, discovery] = await Promise.allSettled([recent, discoverLive()]);
-  const recentLive = index.status === "fulfilled" ? index.value.value.filter(isLiveCandidate) : [];
+  const recentLive = index.status === "fulfilled" ? index.value.value.videos.filter(isLiveCandidate) : [];
   const ids = [...new Set([
     ...recentLive.map((video) => video.id),
     ...(discovery.status === "fulfilled" ? discovery.value.value : []),
@@ -204,20 +221,37 @@ async function loadLive(recent: Promise<Snapshot<YouTubeVideo[]>>): Promise<{ va
   return { value: null, section: { status: "ok", checkedAt: discovery.value.checkedAt } };
 }
 
-async function loadArchive(recent: Promise<Snapshot<YouTubeVideo[]>>) {
+async function loadArchive(recent: Promise<Snapshot<RecentUploads>>) {
   const data = await recent;
-  const video = data.value.filter((item) => item.liveStreamingDetails?.actualEndTime)
+  const video = data.value.videos.filter((item) => item.liveStreamingDetails?.actualEndTime)
     .sort((a, b) => Date.parse(b.liveStreamingDetails!.actualEndTime!) - Date.parse(a.liveStreamingDetails!.actualEndTime!))[0];
   return resolveSnapshot<VideoCard | null>({ value: video ? toCard(video) : null, checkedAt: data.checkedAt }, RECENT_TTL, null);
 }
 
-async function loadVideo(recent: Promise<Snapshot<YouTubeVideo[]>>, shorts: Promise<Snapshot<{ ids: string[]; complete: boolean; latest: VideoCard | null }>> | null) {
+async function loadVideo(recent: Promise<Snapshot<RecentUploads>>, shorts: Promise<Snapshot<{ ids: string[]; complete: boolean; latest: VideoCard | null }>> | null) {
   const [index, catalog] = await Promise.all([recent, shorts?.catch(() => null) ?? null]);
   const freshCatalog: ShortsIndex | null = catalog && Date.now() - Date.parse(catalog.checkedAt) <= SHORTS_TTL * 2 * 1000
     ? { ids: catalog.value.ids, complete: catalog.value.complete, checkedAt: catalog.checkedAt } : null;
-  const result = selectLatestUpload(index.value, freshCatalog);
+  let result = selectLatestUpload(index.value.videos, freshCatalog);
+  let pageToken = index.value.nextPageToken;
+  const sources = [resolveSnapshot(index, RECENT_TTL, null).section];
+  const seen = new Set<string>();
+  const deadline = Date.now() + 12000;
+  while (!result.video && !result.uncertain && pageToken) {
+    // Never report "no uploads" when a lookup was incomplete. Cached pages
+    // make progress on the next attempt without an arbitrary 100-item cutoff.
+    if (Date.now() >= deadline || seen.has(pageToken)) throw new YouTubeError("video_lookup_incomplete");
+    seen.add(pageToken);
+    const page = await olderUploadPage(index.value.playlistId, pageToken);
+    sources.push(resolveSnapshot(page, HISTORY_TTL, null).section);
+    result = selectLatestUpload(page.value.videos, freshCatalog);
+    pageToken = page.value.nextPageToken;
+  }
   if (result.uncertain) throw new YouTubeError("video_classification_pending");
-  return resolveSnapshot<VideoCard | null>({ value: result.video ? toCard(result.video) : null, checkedAt: index.checkedAt }, RECENT_TTL, null);
+  const status: Section["status"] = sources.some((source) => source.status === "error") ? "error"
+    : sources.some((source) => source.status === "stale") ? "stale" : "ok";
+  const checkedAt = sources.map((source) => source.checkedAt!).sort()[0];
+  return { value: status !== "error" && result.video ? toCard(result.video) : null, section: { status, checkedAt } };
 }
 
 // Coalesce simultaneous visitors within a server instance. Next's Data Cache
