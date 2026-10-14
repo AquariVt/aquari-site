@@ -478,17 +478,17 @@ export default function Home() {
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold">配信スケジュール</h2>
                 <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs text-sky-200">
-                  {scheduleDates.startDate ? "週間予定" : "予定調整中"}
+                  {scheduleDates.startDate ? "週間予定" : "対象週未設定"}
                 </span>
               </div>
 
               <div className="mb-5 space-y-1 text-sm text-slate-300">
-                {scheduleDates.startDate && <p>{scheduleWeekLabel(scheduleDates.startDate)}（日本時間）</p>}
+                <p>{scheduleWeekLabel(scheduleDates.startDate)}（日本時間）</p>
                 {scheduleDates.updatedAt && <p>予定の更新日：<time dateTime={scheduleDates.updatedAt}>{scheduleDateLabel(scheduleDates.updatedAt)}</time></p>}
-                {!scheduleDates.startDate && <p>次の週間予定は準備中です。決まり次第、対象週とあわせて掲載します。最新の配信予定はXをご確認ください。</p>}
+                {!scheduleDates.startDate && <p>掲載中の予定は対象週を確認中です。最新の予定はXをご確認ください。</p>}
               </div>
               <div className="grid gap-2">
-                {scheduleDates.startDate && weeklySchedule.map((item) => (
+                {weeklySchedule.map((item) => (
                   <div key={`${item.day}-${item.time}-${item.title}`}
                     className={`grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-3 rounded-xl border px-3 py-3 ${item.color}`}>
                     <h3 className="text-center text-base font-bold"><span aria-hidden="true">{item.day.slice(0, 1)}</span><span className="sr-only">{item.day}</span></h3>

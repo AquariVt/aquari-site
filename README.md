@@ -22,7 +22,7 @@ The site uses system fonts to avoid unnecessary font downloads.
 
 Run `npm test`, `npm run lint`, and `npm run build` before publishing. Tests mock YouTube responses and do not require API credentials.
 
-The weekly schedule is configured in `app/page.tsx`. Set `scheduleDates.startDate` to the confirmed Monday (YYYY-MM-DD), set `updatedAt`, and review all seven entries together. Entries stay hidden while the target week is unconfirmed.
+The weekly schedule is configured in `app/page.tsx`. Set `scheduleDates.startDate` to the confirmed Monday (YYYY-MM-DD), set `updatedAt`, and review all seven entries together. Entries remain visible with an unconfirmed target-week notice until the dates are set.
 
 ## Learn More
 
