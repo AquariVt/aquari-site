@@ -1,17 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const title = "Aquari｜九尾系Vtuber 公式サイト";
 const description = "SIRIUS GAMING所属の九尾系Vtuber・Aquariの公式サイト。YouTube・Twitchの配信、最新動画・Shorts、週間スケジュール、衣装ビジュアルをお届けします。";
@@ -20,7 +9,8 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.aquari-vt.jp"),
   title,
   description,
-  openGraph: { title, description, siteName: "Aquari Official Site", locale: "ja_JP", type: "website" },
+  alternates: { canonical: "/" },
+  openGraph: { title, description, url: "/", siteName: "Aquari Official Site", locale: "ja_JP", type: "website" },
   twitter: { card: "summary_large_image", title, description, creator: "@Aquari_Vt", images: ["/opengraph-image"] },
 };
 
@@ -32,7 +22,7 @@ export default function RootLayout({
   return (
     <html
       lang="ja"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">
         {children}
