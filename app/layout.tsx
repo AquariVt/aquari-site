@@ -13,9 +13,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const title = "Aquari｜九尾系Vtuber 公式サイト";
+const description = "SIRIUS GAMING所属の九尾系Vtuber・Aquariの公式サイト。YouTube・Twitchの配信、最新動画・Shorts、週間スケジュール、衣装ビジュアルをお届けします。";
+
 export const metadata: Metadata = {
-  title: "Aquari Official Site",
-  description: "Aquari Vtuber Official Website",
+  metadataBase: new URL("https://www.aquari-vt.jp"),
+  title,
+  description,
+  openGraph: { title, description, siteName: "Aquari Official Site", locale: "ja_JP", type: "website" },
+  twitter: { card: "summary_large_image", title, description, creator: "@Aquari_Vt", images: ["/opengraph-image"] },
 };
 
 export default function RootLayout({

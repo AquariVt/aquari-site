@@ -9,15 +9,17 @@ type VideoItem = {
   thumbnail: string;
   url: string;
   embeddable: boolean;
+  publishedAt?: string | null;
 };
 
-type SectionName = "live" | "archive" | "shorts";
+type SectionName = "live" | "archive" | "shorts" | "video";
 type SectionState = {
   status: "ok" | "stale" | "error" | "unconfigured";
   checkedAt: string | null;
 };
 type LatestResponse = {
   latestShort: VideoItem | null;
+  latestVideo: VideoItem | null;
   latestArchive: VideoItem | null;
   currentLive: VideoItem | null;
   sections: Record<SectionName, SectionState>;
@@ -30,11 +32,12 @@ const subscribeToHostname = () => () => {};
 const getHostname = () => window.location.hostname;
 const getServerHostname = () => "";
 const emptyLatest: LatestResponse = {
-  latestShort: null, latestArchive: null, currentLive: null,
+  latestShort: null, latestArchive: null, currentLive: null, latestVideo: null,
   sections: {
     live: { status: "error", checkedAt: null },
     archive: { status: "error", checkedAt: null },
     shorts: { status: "error", checkedAt: null },
+    video: { status: "error", checkedAt: null },
   },
 };
 
@@ -57,6 +60,7 @@ function readVideo(value: unknown, shorts = false): VideoItem | null {
   }
   return {
     id: item.id, title: item.title, thumbnail, embeddable: item.embeddable,
+    publishedAt: typeof item.publishedAt === "string" && Number.isFinite(Date.parse(item.publishedAt)) ? item.publishedAt : null,
     // Construct links ourselves instead of accepting arbitrary API-provided URLs.
     url: shorts ? `https://www.youtube.com/shorts/${item.id}` : `https://www.youtube.com/watch?v=${item.id}`,
   };
@@ -67,7 +71,7 @@ function readLatest(value: unknown): LatestResponse {
   const data = value as Record<string, unknown>;
   if (!data.sections || typeof data.sections !== "object") throw new Error("invalid_sections");
   const sections = {} as Record<SectionName, SectionState>;
-  for (const name of ["live", "archive", "shorts"] as const) {
+  for (const name of ["live", "archive", "shorts", "video"] as const) {
     const section = (data.sections as Record<string, unknown>)[name];
     if (!section || typeof section !== "object") throw new Error("invalid_section");
     const state = section as Record<string, unknown>;
@@ -79,13 +83,13 @@ function readLatest(value: unknown): LatestResponse {
   }
   return {
     currentLive: readVideo(data.currentLive), latestArchive: readVideo(data.latestArchive),
-    latestShort: readVideo(data.latestShort, true), sections,
+    latestShort: readVideo(data.latestShort, true), latestVideo: readVideo(data.latestVideo), sections,
   };
 }
 
 function mergeLatest(previous: LatestResponse, incoming: LatestResponse): LatestResponse {
   const next = { ...incoming, sections: { ...incoming.sections } };
-  for (const [section, key] of [["archive", "latestArchive"], ["shorts", "latestShort"]] as const) {
+  for (const [section, key] of [["archive", "latestArchive"], ["shorts", "latestShort"], ["video", "latestVideo"]] as const) {
     if (incoming.sections[section].status === "error" && previous[key]) {
       const checkedAt = previous.sections[section].checkedAt;
       if (checkedAt && Date.now() - Date.parse(checkedAt) < 7 * 86400 * 1000) {
@@ -105,7 +109,7 @@ function VideoThumbnail({ video }: { video: VideoItem }) {
   if (attempt >= sources.length) return <div className="flex aspect-video items-center justify-center bg-black/30 text-sky-200">YouTubeで見る ↗</div>;
   return <div className="relative aspect-video w-full bg-black/30">
     <Image key={sources[attempt]} src={sources[attempt]} alt={video.title} fill
-      sizes="(min-width: 1280px) 560px, (min-width: 768px) calc(50vw - 64px), calc(100vw - 88px)"
+      sizes="(min-width: 1280px) 360px, (min-width: 768px) calc(50vw - 64px), calc(100vw - 64px)"
       loading="lazy" decoding="async" onError={() => setAttempt((value) => value + 1)}
       className="object-contain transition duration-300 hover:scale-[1.02]" />
   </div>;
@@ -120,8 +124,8 @@ function SectionNotice({ state }: { state: SectionState }) {
   </p>;
 }
 
-function YouTubeCard({ video, live = false }: { video: VideoItem; live?: boolean }) {
-  return <div className="space-y-4">
+function YouTubeCard({ video, live = false, shorts = false }: { video: VideoItem; live?: boolean; shorts?: boolean }) {
+  return <div className="space-y-3">
     {live && video.embeddable ? <iframe
       key={video.id} src={`https://www.youtube-nocookie.com/embed/${video.id}`}
       title={video.title} className="aspect-video w-full rounded-2xl border border-white/10"
@@ -132,7 +136,9 @@ function YouTubeCard({ video, live = false }: { video: VideoItem; live?: boolean
         <VideoThumbnail key={`${video.id}-${video.thumbnail}`} video={video} />
       </a>}
     <a href={video.url} target="_blank" rel="noopener noreferrer"
-      className="block text-sky-300 underline underline-offset-4 hover:text-sky-200">{video.title}</a>
+      className="block break-words text-sky-200 underline underline-offset-4 hover:text-white">{video.title}</a>
+    {!live && video.publishedAt && <p className="text-xs text-slate-300">公開：<time dateTime={video.publishedAt}>{new Date(video.publishedAt).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" })}</time></p>}
+    {shorts && <a href={video.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-rose-500/20 px-4 py-2 text-sm font-bold text-rose-100 ring-1 ring-rose-300/30 hover:bg-rose-500/30">このShortsを見る ↗</a>}
     {live && <p className="text-sm text-slate-300">再生できない場合は、上のリンクからYouTubeでご覧ください。</p>}
   </div>;
 }
@@ -148,7 +154,7 @@ function VisualGallery() {
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const visual = visuals[selected];
 
-  return <section id="visuals" className="scroll-mt-6 rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+  return <section id="visuals" className="scroll-mt-6 rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
     <h2 className="mb-5 text-2xl font-bold">ビジュアル</h2>
     <div role="tablist" aria-label="衣装を選ぶ" className="mb-5 grid grid-cols-3 gap-2"
       onKeyDown={(event) => {
@@ -288,7 +294,7 @@ export default function Home() {
 
     const loadLatest = async (manual = false) => {
       if (disposed || controller || (!manual && document.visibilityState === "hidden")) return;
-      const interval = Math.min(120000 * 2 ** failures, 900000);
+      const interval = Math.min(60000 * 2 ** failures, 900000);
       if (!manual && Date.now() - lastAttempt < interval) return;
       lastAttempt = Date.now();
       controller = new AbortController();
@@ -317,7 +323,7 @@ export default function Home() {
     refreshRef.current = () => { void loadLatest(true); };
     const onVisible = () => { void loadLatest(); };
     void loadLatest();
-    const timer = window.setInterval(onVisible, 120000);
+    const timer = window.setInterval(onVisible, 60000);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
     window.addEventListener("online", onVisible);
@@ -344,8 +350,8 @@ export default function Home() {
       />
       <div className="fixed inset-0 -z-10 bg-slate-950/80 backdrop-blur-[3px]" />
 
-      <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-12">
-        <header className="mb-10 rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md md:p-10">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-5 sm:py-8 md:px-8 md:py-12">
+        <header className="mb-10 rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md md:p-10">
           <div className="inline-flex items-center rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
             SIRIUS GAMING / 九尾系Vtuber
           </div>
@@ -387,8 +393,8 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-2">
-              <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+              <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
                 <div className="mb-4 flex flex-wrap items-center gap-3">
                   <h2 className="text-2xl font-bold">{isLive ? "YouTube配信中" : "最新アーカイブ"}</h2>
                   {isLive && <span className="inline-flex items-center gap-2 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">
@@ -405,11 +411,24 @@ export default function Home() {
                 </>}
               </section>
 
-              <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-                <h2 className="mb-4 text-2xl font-bold">{latest.sections.shorts.status === "unconfigured" ? "Short動画" : "最新のShort動画"}</h2>
+              <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
+                <h2 className="mb-4 text-2xl font-bold">最新の動画</h2>
+                {loading ? <div role="status" className="flex aspect-video items-center justify-center rounded-2xl bg-black/30 text-slate-300">読み込み中…</div> : <>
+                  <SectionNotice state={latest.sections.video} />
+                  {latest.latestVideo ? <YouTubeCard video={latest.latestVideo} /> :
+                    <p className="rounded-2xl bg-black/20 p-4 text-slate-300">{latest.sections.video.status === "error" ? "通常動画の情報を確認できませんでした。" : "直近の公開動画に表示できる通常動画はありません。"}</p>}
+                  <a href={`${CHANNEL_URL}/videos`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sky-300 underline underline-offset-4">動画一覧を見る ↗</a>
+                </>}
+              </section>
+
+              <section className="rounded-3xl border border-rose-300/20 bg-white/10 p-4 shadow-2xl backdrop-blur-md sm:p-6">
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  <h2 className="text-2xl font-bold">最新のShorts</h2>
+                  <span className="rounded-full bg-rose-500/20 px-3 py-1 text-xs font-bold text-rose-200">Shorts</span>
+                </div>
                 {loading ? <div role="status" className="flex aspect-video items-center justify-center rounded-2xl bg-black/30 text-slate-300">読み込み中…</div> : <>
                   <SectionNotice state={latest.sections.shorts} />
-                  {latest.latestShort ? <YouTubeCard video={latest.latestShort} /> :
+                  {latest.latestShort ? <YouTubeCard video={latest.latestShort} shorts /> :
                     <p className="rounded-2xl bg-black/20 p-4 text-slate-300">
                       {latest.sections.shorts.status === "unconfigured" ? "Short動画はYouTubeで公開しています。" :
                         latest.sections.shorts.status === "error" ? "Short動画の情報を取得できませんでした。" : "表示できるShort動画はありません。"}
@@ -419,7 +438,7 @@ export default function Home() {
               </section>
             </div>
 
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
 
               {twitchSrc ? (
@@ -441,7 +460,7 @@ export default function Home() {
         </section>
 
         <section className="grid items-start gap-8 lg:grid-cols-2">
-            <section id="schedule" className="scroll-mt-6 rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <section id="schedule" className="scroll-mt-6 rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold">配信スケジュール</h2>
                 <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs text-sky-200">
@@ -454,24 +473,17 @@ export default function Home() {
                 {scheduleDates.updatedAt && <p>予定の更新日：<time dateTime={scheduleDates.updatedAt}>{scheduleDateLabel(scheduleDates.updatedAt)}</time></p>}
                 {!scheduleDates.startDate && <p>掲載中の予定は対象週を確認中です。最新の予定はXをご確認ください。</p>}
               </div>
-              <div className="grid gap-4">
+              <div className="grid gap-2">
                 {weeklySchedule.map((item) => (
-                  <div
-                    key={`${item.day}-${item.time}-${item.title}`}
-                    className={`rounded-2xl border p-4 shadow-lg transition duration-300 hover:scale-[1.02] hover:bg-sky-400/20 ${item.color}`}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <h3 className="text-lg font-bold">{item.day}</h3>
-                        <p className="mt-1 text-slate-200">{item.title}</p>
-                        <p className="mt-1 text-sm text-slate-400">
-                          {item.note}
-                        </p>
+                  <div key={`${item.day}-${item.time}-${item.title}`}
+                    className={`grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-3 rounded-xl border px-3 py-3 ${item.color}`}>
+                    <h3 className="text-center text-base font-bold"><span aria-hidden="true">{item.day.slice(0, 1)}</span><span className="sr-only">{item.day}</span></h3>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <p className="break-words text-sm font-semibold sm:text-base">{item.title}</p>
+                        {item.time && <p className="shrink-0 text-sm font-bold tabular-nums text-sky-200">{item.time}</p>}
                       </div>
-
-                      <p className="shrink-0 text-right text-lg font-black text-sky-200">
-                        {item.time}
-                      </p>
+                      {item.note && <p className="mt-1 text-xs text-slate-300">{item.note}</p>}
                     </div>
                   </div>
                 ))}
@@ -482,7 +494,7 @@ export default function Home() {
               </p>
             </section>
             <VisualGallery />
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">タグ一覧</h2>
 
               <div className="space-y-3 text-slate-200">
@@ -535,7 +547,7 @@ export default function Home() {
                 </p>
               </div>
             </section>
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">SNS / Channel</h2>
 
               <div className="grid gap-3">
@@ -585,7 +597,7 @@ export default function Home() {
                 </a>
               </div>
             </section>
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">固定動画</h2>
 
               <a
@@ -606,7 +618,7 @@ export default function Home() {
                 YouTubeで見る
               </a>
             </section>
-            <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold">おすすめPlaylist</h2>
 
