@@ -18,7 +18,11 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The site uses system fonts to avoid unnecessary font downloads.
+
+Run `npm test`, `npm run lint`, and `npm run build` before publishing. Tests mock YouTube responses and do not require API credentials.
+
+The weekly schedule is configured in `app/page.tsx`. Set `scheduleDates.startDate` to the confirmed Monday (YYYY-MM-DD), set `updatedAt`, and review all seven entries together. Entries stay hidden while the target week is unconfirmed.
 
 ## Learn More
 

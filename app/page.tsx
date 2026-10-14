@@ -128,7 +128,7 @@ function YouTubeCard({ video, live = false, shorts = false }: { video: VideoItem
   return <div className="space-y-3">
     {live && video.embeddable ? <iframe
       key={video.id} src={`https://www.youtube-nocookie.com/embed/${video.id}`}
-      title={video.title} className="aspect-video w-full rounded-2xl border border-white/10"
+      title={video.title} className="aspect-video min-h-[202px] w-full rounded-2xl border border-white/10"
       loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
       referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /> :
       <a href={video.url} target="_blank" rel="noopener noreferrer"
@@ -148,6 +148,31 @@ const visuals = [
   { id: "shrine", label: "巫女衣装", src: "/aquari-shrine.png" },
   { id: "casual", label: "私服", src: "/aquari-casual.png" },
 ];
+
+function TwitchPlayer({ src }: { src: string }) {
+  const container = useRef<HTMLDivElement | null>(null);
+  const [fits, setFits] = useState(false);
+  useEffect(() => {
+    if (!container.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      // Include the border so the player viewport stays at least 400px wide.
+      setFits(entry.contentRect.width >= 402);
+    });
+    observer.observe(container.current);
+    return () => observer.disconnect();
+  }, []);
+  return <div ref={container}>
+    {fits && src ? <iframe src={src} title="Aquari Twitch Live"
+      loading="lazy" allow="autoplay; fullscreen; picture-in-picture"
+      referrerPolicy="strict-origin-when-cross-origin" allowFullScreen
+      className="h-[360px] w-full rounded-2xl border border-white/10" /> :
+      <div className="rounded-2xl border border-purple-300/20 bg-purple-500/10 p-5">
+        <p className="mb-4 text-sm leading-6 text-slate-200">Twitchの配信は、こちらからご覧いただけます。</p>
+        <a href="https://www.twitch.tv/aquarivt" target="_blank" rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center rounded-xl bg-purple-600 px-5 py-3 font-bold hover:bg-purple-500">Twitchで配信を見る ↗</a>
+      </div>}
+  </div>;
+}
 
 function VisualGallery() {
   const [selected, setSelected] = useState(0);
@@ -308,7 +333,9 @@ export default function Home() {
         if (disposed) return;
         setLatest((previous) => mergeLatest(previous, data));
         setRequestError(false);
-        failures = Object.values(data.sections).some((section) => section.status === "error") ? Math.min(failures + 1, 3) : 0;
+        // A partial section failure must not slow down healthy LIVE updates.
+        // Transport failures (including an all-failed 503) back off in catch.
+        failures = 0;
       } catch {
         if (disposed) return;
         failures = Math.min(failures + 1, 3);
@@ -441,20 +468,7 @@ export default function Home() {
             <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl sm:p-6 backdrop-blur-md">
               <h2 className="mb-4 text-2xl font-bold">Twitch配信</h2>
 
-              {twitchSrc ? (
-                <iframe
-                  src={twitchSrc}
-                  loading="lazy" allow="autoplay; fullscreen; picture-in-picture"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  title="Aquari Twitch Live"
-                  className="h-[360px] w-full rounded-2xl border border-white/10"
-                  allowFullScreen
-                />
-              ) : (
-                <div className="flex h-[360px] items-center justify-center rounded-2xl bg-black/30 text-slate-300">
-                  読み込み中...
-                </div>
-              )}
+              <TwitchPlayer src={twitchSrc} />
               <a href="https://www.twitch.tv/aquarivt" target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sky-300 underline underline-offset-4">再生できない場合はTwitchで見る ↗</a>
             </section>
         </section>
@@ -464,17 +478,17 @@ export default function Home() {
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold">配信スケジュール</h2>
                 <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs text-sky-200">
-                  {scheduleDates.startDate ? "週間予定" : "対象週未設定"}
+                  {scheduleDates.startDate ? "週間予定" : "予定調整中"}
                 </span>
               </div>
 
               <div className="mb-5 space-y-1 text-sm text-slate-300">
-                <p>{scheduleWeekLabel(scheduleDates.startDate)}（日本時間）</p>
+                {scheduleDates.startDate && <p>{scheduleWeekLabel(scheduleDates.startDate)}（日本時間）</p>}
                 {scheduleDates.updatedAt && <p>予定の更新日：<time dateTime={scheduleDates.updatedAt}>{scheduleDateLabel(scheduleDates.updatedAt)}</time></p>}
-                {!scheduleDates.startDate && <p>掲載中の予定は対象週を確認中です。最新の予定はXをご確認ください。</p>}
+                {!scheduleDates.startDate && <p>次の週間予定は準備中です。決まり次第、対象週とあわせて掲載します。最新の配信予定はXをご確認ください。</p>}
               </div>
               <div className="grid gap-2">
-                {weeklySchedule.map((item) => (
+                {scheduleDates.startDate && weeklySchedule.map((item) => (
                   <div key={`${item.day}-${item.time}-${item.title}`}
                     className={`grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-3 rounded-xl border px-3 py-3 ${item.color}`}>
                     <h3 className="text-center text-base font-bold"><span aria-hidden="true">{item.day.slice(0, 1)}</span><span className="sr-only">{item.day}</span></h3>
@@ -632,7 +646,7 @@ export default function Home() {
                   src={playlistEmbedUrl}
                   loading="lazy" referrerPolicy="strict-origin-when-cross-origin"
                   title="Aquari YouTube Playlist"
-                  className="aspect-video w-full"
+                  className="aspect-video min-h-[200px] w-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
