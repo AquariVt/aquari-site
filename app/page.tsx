@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 type VideoItem = {
@@ -8,13 +8,126 @@ type VideoItem = {
   title: string;
   thumbnail: string;
   url: string;
+  embeddable: boolean;
 };
 
+type SectionName = "live" | "archive" | "shorts";
+type SectionState = {
+  status: "ok" | "stale" | "error" | "unconfigured";
+  checkedAt: string | null;
+};
 type LatestResponse = {
   latestShort: VideoItem | null;
   latestArchive: VideoItem | null;
   currentLive: VideoItem | null;
+  sections: Record<SectionName, SectionState>;
 };
+
+const CHANNEL_URL = "https://www.youtube.com/channel/UCBvSY3MYEkkJ194_Zdjp2Jw";
+const SHORTS_URL = `${CHANNEL_URL}/shorts`;
+const emptyLatest: LatestResponse = {
+  latestShort: null, latestArchive: null, currentLive: null,
+  sections: {
+    live: { status: "error", checkedAt: null },
+    archive: { status: "error", checkedAt: null },
+    shorts: { status: "error", checkedAt: null },
+  },
+};
+
+function readVideo(value: unknown, shorts = false): VideoItem | null {
+  if (value === null) return null;
+  if (!value || typeof value !== "object") throw new Error("invalid_video");
+  const item = value as Record<string, unknown>;
+  if (typeof item.id !== "string" || !/^[A-Za-z0-9_-]{11}$/.test(item.id)
+    || typeof item.title !== "string" || typeof item.embeddable !== "boolean") {
+    throw new Error("invalid_video");
+  }
+  let thumbnail = `https://img.youtube.com/vi/${item.id}/hqdefault.jpg`;
+  if (typeof item.thumbnail === "string") {
+    try {
+      const url = new URL(item.thumbnail);
+      if (url.protocol === "https:" && ["i.ytimg.com", "img.youtube.com"].includes(url.hostname)) {
+        thumbnail = url.href;
+      }
+    } catch { /* Use the fixed-domain fallback. */ }
+  }
+  return {
+    id: item.id, title: item.title, thumbnail, embeddable: item.embeddable,
+    // Construct links ourselves instead of accepting arbitrary API-provided URLs.
+    url: shorts ? `https://www.youtube.com/shorts/${item.id}` : `https://www.youtube.com/watch?v=${item.id}`,
+  };
+}
+
+function readLatest(value: unknown): LatestResponse {
+  if (!value || typeof value !== "object") throw new Error("invalid_response");
+  const data = value as Record<string, unknown>;
+  if (!data.sections || typeof data.sections !== "object") throw new Error("invalid_sections");
+  const sections = {} as Record<SectionName, SectionState>;
+  for (const name of ["live", "archive", "shorts"] as const) {
+    const section = (data.sections as Record<string, unknown>)[name];
+    if (!section || typeof section !== "object") throw new Error("invalid_section");
+    const state = section as Record<string, unknown>;
+    if (!["ok", "stale", "error", "unconfigured"].includes(String(state.status))
+      || !(state.checkedAt === null || (typeof state.checkedAt === "string" && Number.isFinite(Date.parse(state.checkedAt))))) {
+      throw new Error("invalid_section");
+    }
+    sections[name] = { status: state.status as SectionState["status"], checkedAt: state.checkedAt as string | null };
+  }
+  return {
+    currentLive: readVideo(data.currentLive), latestArchive: readVideo(data.latestArchive),
+    latestShort: readVideo(data.latestShort, true), sections,
+  };
+}
+
+function mergeLatest(previous: LatestResponse, incoming: LatestResponse): LatestResponse {
+  const next = { ...incoming, sections: { ...incoming.sections } };
+  for (const [section, key] of [["archive", "latestArchive"], ["shorts", "latestShort"]] as const) {
+    if (incoming.sections[section].status === "error" && previous[key]) {
+      const checkedAt = previous.sections[section].checkedAt;
+      if (checkedAt && Date.now() - Date.parse(checkedAt) < 7 * 86400 * 1000) {
+        next[key] = previous[key];
+        next.sections[section] = { status: "stale", checkedAt };
+      }
+    }
+  }
+  // An unverified previous live stream must not keep a LIVE badge.
+  if (incoming.sections.live.status !== "ok") next.currentLive = null;
+  return next;
+}
+
+function VideoThumbnail({ video }: { video: VideoItem }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <div className="flex aspect-video items-center justify-center bg-black/30 text-sky-200">YouTubeで見る ↗</div>;
+  return <img src={video.thumbnail} alt={video.title} width={480} height={360}
+    loading="lazy" decoding="async" onError={() => setFailed(true)}
+    className="aspect-video w-full object-cover transition duration-300 hover:scale-[1.02]" />;
+}
+
+function SectionNotice({ state }: { state: SectionState }) {
+  if (state.status !== "stale" && state.status !== "error") return null;
+  const date = state.checkedAt ? new Date(state.checkedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) : null;
+  return <p role="status" className="mb-3 text-sm text-amber-200">
+    {state.status === "stale" ? "更新を確認できないため、前回の情報を表示しています。" : "現在、情報を取得できません。"}
+    {date && <span className="block">最終確認：{date}</span>}
+  </p>;
+}
+
+function YouTubeCard({ video, live = false }: { video: VideoItem; live?: boolean }) {
+  return <div className="space-y-4">
+    {live && video.embeddable ? <iframe
+      key={video.id} src={`https://www.youtube-nocookie.com/embed/${video.id}`}
+      title={video.title} className="aspect-video w-full rounded-2xl border border-white/10"
+      loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+      referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /> :
+      <a href={video.url} target="_blank" rel="noopener noreferrer"
+        className="block overflow-hidden rounded-2xl border border-white/10">
+        <VideoThumbnail key={`${video.id}-${video.thumbnail}`} video={video} />
+      </a>}
+    <a href={video.url} target="_blank" rel="noopener noreferrer"
+      className="block text-sky-300 underline underline-offset-4 hover:text-sky-200">{video.title}</a>
+    {live && <p className="text-sm text-slate-300">再生できない場合は、上のリンクからYouTubeでご覧ください。</p>}
+  </div>;
+}
 
 type ScheduleItem = {
   day: string;
@@ -24,8 +137,7 @@ type ScheduleItem = {
   color: string;
 };
 
-const weeklySchedule
-: ScheduleItem[] = [
+const weeklySchedule: ScheduleItem[] = [
   {
     day: "月曜日",
     time: "15:00～",
@@ -79,12 +191,12 @@ const weeklySchedule
 
 export default function Home() {
   const [twitchSrc, setTwitchSrc] = useState("");
-  const [latest, setLatest] = useState<LatestResponse>({
-    latestShort: null,
-    latestArchive: null,
-    currentLive: null,
-  });
+  const [latest, setLatest] = useState<LatestResponse>(emptyLatest);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [requestError, setRequestError] = useState(false);
+  const refreshRef = useRef<(() => void) | null>(null);
+  const refresh = useCallback(() => refreshRef.current?.(), []);
 
   const fixedVideoId = "HuQbQ9e4eJ8";
   const fixedVideoUrl = "https://youtu.be/HuQbQ9e4eJ8";
@@ -96,26 +208,62 @@ export default function Home() {
     "https://www.youtube.com/embed/videoseries?list=PLNk3vHgBJiOmmxj74gSiYj5ajHAmr3oQb";
 
   useEffect(() => {
-    const host = window.location.hostname || "localhost";
-    setTwitchSrc(`https://player.twitch.tv/?channel=aquarivt&parent=${host}`);
+    const host = window.location.hostname;
+    setTwitchSrc(`https://player.twitch.tv/?channel=aquarivt&parent=${encodeURIComponent(host)}&autoplay=false`);
+    let disposed = false;
+    let controller: AbortController | null = null;
+    let lastAttempt = 0;
+    let failures = 0;
 
-    const loadLatest = async () => {
+    const loadLatest = async (manual = false) => {
+      if (disposed || controller || (!manual && document.visibilityState === "hidden")) return;
+      const interval = Math.min(120000 * 2 ** failures, 900000);
+      if (!manual && Date.now() - lastAttempt < interval) return;
+      lastAttempt = Date.now();
+      controller = new AbortController();
+      const activeController = controller;
+      const timeout = window.setTimeout(() => activeController.abort(), 30000);
+      setRefreshing(true);
       try {
-        const res = await fetch("/api/youtube/latest", { cache: "no-store" });
-        const data: LatestResponse = await res.json();
-        setLatest(data);
-      } catch (error) {
-        console.error("YouTube latest load error:", error);
+        const response = await fetch("/api/youtube/latest", { cache: "no-store", signal: activeController.signal });
+        if (!response.ok) throw new Error("request_failed");
+        const data = readLatest(await response.json());
+        if (disposed) return;
+        setLatest((previous) => mergeLatest(previous, data));
+        setRequestError(false);
+        failures = Object.values(data.sections).some((section) => section.status === "error") ? Math.min(failures + 1, 3) : 0;
+      } catch {
+        if (disposed) return;
+        failures = Math.min(failures + 1, 3);
+        setRequestError(true);
+        setLatest((previous) => mergeLatest(previous, emptyLatest));
       } finally {
-        setLoading(false);
+        window.clearTimeout(timeout);
+        controller = null;
+        if (!disposed) { setLoading(false); setRefreshing(false); }
       }
     };
-
-    loadLatest();
+    refreshRef.current = () => { void loadLatest(true); };
+    const onVisible = () => { void loadLatest(); };
+    void loadLatest();
+    const timer = window.setInterval(onVisible, 120000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    window.addEventListener("online", onVisible);
+    return () => {
+      disposed = true;
+      controller?.abort();
+      refreshRef.current = null;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("online", onVisible);
+    };
   }, []);
 
   const youtubeDisplay = latest.currentLive ?? latest.latestArchive;
-  const isLive = !!latest.currentLive;
+  const isLive = latest.sections.live.status === "ok" && !!latest.currentLive;
+  const displaySection = isLive ? latest.sections.live : latest.sections.archive;
 
   return (
     <main className="relative min-h-screen overflow-hidden text-white">
@@ -304,6 +452,7 @@ export default function Home() {
                 <img
                   src={fixedThumbnail}
                   alt="Aquari 固定動画"
+                  width={480} height={360} loading="lazy" decoding="async"
                   className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
                 />
               </a>
@@ -330,6 +479,7 @@ export default function Home() {
               <div className="overflow-hidden rounded-2xl border border-white/10">
                 <iframe
                   src={playlistEmbedUrl}
+                  loading="lazy" referrerPolicy="strict-origin-when-cross-origin"
                   title="Aquari YouTube Playlist"
                   className="aspect-video w-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -365,7 +515,7 @@ export default function Home() {
                       width={1200}
                       height={1200}
                       className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                      priority
+                      sizes="(min-width: 1280px) 300px, (min-width: 1024px) 600px, calc(100vw - 80px)"
                     />
                   </div>
                 </div>
@@ -380,107 +530,56 @@ export default function Home() {
                       src="/aquari-shrine.png"
                       alt="Aquari 巫女衣装ビジュアル"
                       width={1200}
-                      height={1200}
+                      height={1694}
                       className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                      priority
+                      sizes="(min-width: 1280px) 300px, (min-width: 1024px) 600px, calc(100vw - 80px)"
                     />
                   </div>
                 </div>
               </div>
             </section>
 
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p role="status" className="text-sm text-slate-300">
+                {requestError ? "動画情報の更新に失敗しました。時間を置いて再試行してください。" :
+                  !loading && latest.sections.live.status === "error" ? "現在の配信状況を確認できません。YouTubeでもご確認ください。" :
+                    "配信・動画情報は自動で更新されます。"}
+              </p>
+              <button type="button" onClick={refresh} disabled={refreshing}
+                className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-bold transition hover:bg-sky-400 disabled:cursor-wait disabled:opacity-50">
+                {refreshing ? "確認中…" : "更新する"}
+              </button>
+            </div>
+
             <div className="grid gap-8 xl:grid-cols-2">
               <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-                <div className="mb-4 flex items-center gap-3">
-                  <h2 className="text-2xl font-bold">
-                    {isLive ? "YouTube配信中" : "最新アーカイブ"}
-                  </h2>
-
-                  {isLive && (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white shadow-lg">
-                      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />
-                      LIVE
-                    </span>
-                  )}
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <h2 className="text-2xl font-bold">{isLive ? "YouTube配信中" : "最新アーカイブ"}</h2>
+                  {isLive && <span className="inline-flex items-center gap-2 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">
+                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />LIVE
+                  </span>}
                 </div>
-
-                {loading ? (
-                  <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
-                    読み込み中...
-                  </div>
-                ) : youtubeDisplay ? (
-                  <div className="space-y-4">
-                    <a
-                      href={youtubeDisplay.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block overflow-hidden rounded-2xl border border-white/10"
-                    >
-                      <img
-                        src={`https://img.youtube.com/vi/${youtubeDisplay.id}/hqdefault.jpg`}
-                        alt={youtubeDisplay.title}
-                        className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                      />
-                    </a>
-
-                    <a
-                      href={youtubeDisplay.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-sky-300 underline underline-offset-4 hover:text-sky-200"
-                    >
-                      {youtubeDisplay.title}
-                    </a>
-
-                    {!isLive && (
-                      <p className="text-sm text-slate-400">
-                        ※現在配信していないため、最新アーカイブを表示しています
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl bg-black/20 p-4 text-slate-300">
-                    動画が見つかりませんでした。
-                  </div>
-                )}
+                {loading ? <div role="status" className="flex aspect-video items-center justify-center rounded-2xl bg-black/30 text-slate-300">読み込み中…</div> : <>
+                  <SectionNotice state={displaySection} />
+                  {youtubeDisplay ? <YouTubeCard video={youtubeDisplay} live={isLive} /> :
+                    <div className="rounded-2xl bg-black/20 p-4 text-slate-300">
+                      {displaySection.status === "error" ? "動画情報を取得できませんでした。" : "表示できるアーカイブはありません。"}
+                      <a href={`${CHANNEL_URL}/streams`} target="_blank" rel="noopener noreferrer" className="mt-3 block text-sky-300 underline">YouTubeの配信一覧を見る ↗</a>
+                    </div>}
+                </>}
               </section>
 
               <section className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-                <h2 className="mb-4 text-2xl font-bold">最新のShort動画</h2>
-
-                {loading ? (
-                  <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-black/30 text-slate-300">
-                    読み込み中...
-                  </div>
-                ) : latest.latestShort ? (
-                  <div className="space-y-4">
-                    <a
-                      href={latest.latestShort.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block overflow-hidden rounded-2xl border border-white/10"
-                    >
-                      <img
-                        src={`https://img.youtube.com/vi/${latest.latestShort.id}/hqdefault.jpg`}
-                        alt={latest.latestShort.title}
-                        className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
-                      />
-                    </a>
-
-                    <a
-                      href={latest.latestShort.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-sky-300 underline underline-offset-4 hover:text-sky-200"
-                    >
-                      {latest.latestShort.title}
-                    </a>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl bg-black/20 p-4 text-slate-300">
-                    最新のShort動画が見つかりませんでした。
-                  </div>
-                )}
+                <h2 className="mb-4 text-2xl font-bold">{latest.sections.shorts.status === "unconfigured" ? "Short動画" : "最新のShort動画"}</h2>
+                {loading ? <div role="status" className="flex aspect-video items-center justify-center rounded-2xl bg-black/30 text-slate-300">読み込み中…</div> : <>
+                  <SectionNotice state={latest.sections.shorts} />
+                  {latest.latestShort ? <YouTubeCard video={latest.latestShort} /> :
+                    <p className="rounded-2xl bg-black/20 p-4 text-slate-300">
+                      {latest.sections.shorts.status === "unconfigured" ? "Short動画はYouTubeで公開しています。" :
+                        latest.sections.shorts.status === "error" ? "Short動画の情報を取得できませんでした。" : "表示できるShort動画はありません。"}
+                    </p>}
+                  <a href={SHORTS_URL} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sky-300 underline underline-offset-4">Shorts一覧を見る ↗</a>
+                </>}
               </section>
             </div>
 
@@ -490,6 +589,8 @@ export default function Home() {
               {twitchSrc ? (
                 <iframe
                   src={twitchSrc}
+                  loading="lazy" allow="autoplay; fullscreen; picture-in-picture"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   title="Aquari Twitch Live"
                   className="h-[360px] w-full rounded-2xl border border-white/10"
                   allowFullScreen
@@ -499,6 +600,7 @@ export default function Home() {
                   読み込み中...
                 </div>
               )}
+              <a href="https://www.twitch.tv/aquarivt" target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sky-300 underline underline-offset-4">再生できない場合はTwitchで見る ↗</a>
             </section>
           </div>
         </section>
@@ -507,5 +609,6 @@ export default function Home() {
           © Aquari
         </footer>
       </div>
-    </main>  );
+    </main>
+  );
 }
